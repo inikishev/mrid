@@ -10,7 +10,7 @@ from ..utils.torch_utils import TORCH_INSTALLED
 if TYPE_CHECKING:
     import torch
 
-PREFER_DCM2NIIX = True
+PREFER_DCM2NIIX = False
 ImageLike: TypeAlias = "np.ndarray | sitk.Image | torch.Tensor | str | os.PathLike"
 
 def read_dicoms(dir: str | os.PathLike) -> sitk.Image:
