@@ -105,8 +105,9 @@ def test_stack_numpy():
     stacked = study.stack_numpy(scans=True, seg=False)
     assert stacked.shape == (2, 10, 20, 30)  # 2 images, each 10x20x30
 
-
-def test_serialization():
+@pytest.mark.parametrize("prefix", ("", "prefix"))
+@pytest.mark.parametrize("suffix", ("", "suffix"))
+def test_serialization(prefix,suffix):
     data = dict(
         t1=np.random.rand(10,20,30),
         t2=np.random.rand(40,50,60),
@@ -121,8 +122,8 @@ def test_serialization():
 
     with tempfile.TemporaryDirectory() as tmpdir:
         out_dir = os.path.join(tmpdir, "study")
-        study.save(out_dir)
-        loaded = Study.from_dir(out_dir)
+        study.save(out_dir, prefix=prefix, suffix=suffix)
+        loaded = Study.from_dir(out_dir, prefix=prefix, suffix=suffix)
 
     assert sorted(loaded.keys()) == sorted(["t1", "t2", "seg_brain", "seg_tumor", "info_id", "info_name"])
 

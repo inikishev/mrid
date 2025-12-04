@@ -250,6 +250,16 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         return Study(**d, **self.get_info())
 
+    def resample_to(self, to: "np.ndarray | sitk.Image | torch.Tensor | str", interpolation=sitk.sitkLinear) -> "Study":
+        """Returns a new study, resamples all images including segmentation to `to`.
+        Segmentation always uses nearest interpolation"""
+        to = tositk(to)
+
+        return self.apply(
+            partial(preprocessing.registration.resample_to, to=to, interpolation=interpolation),
+            partial(preprocessing.registration.resample_to, to=to, interpolation=sitk.sitkNearestNeighbor),
+        )
+
     def n4_bias_field_correction(self, key: str, shrink: int = 4) -> "Study":
         """Returns a new study with corrected bias field of the image under ``key``. Doesn't affect other images.
 
