@@ -13,7 +13,7 @@ build-backend = "setuptools.build_meta"
 name = "mrid"
 description = "Tools for working with 3D medical images and segmentations - registration, brain skull-stripping, etc."
 
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
   "numpy",
   "SimpleITK",
