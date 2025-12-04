@@ -2,7 +2,7 @@
 
 mrid is a simple to use library for preprocessing of 3D images, particularly medical images.
 
-`mrid.Study` provides a convenient way to work with scans and provides all the tools (skull-stripping, registration, etc). See this notebook for an example of how to use it ([Google Colab](https://colab.research.google.com/drive/1d1MWPaGAqfK6q_5879LpwwxPCB-tbExe?usp=sharing)).
+`mrid.Study` provides a convenient way to work with scans and provides all the tools (skull-stripping, registration, etc). See [this notebook](https://nbviewer.org/github/inikishev/mrid/blob/main/mrid_tutorial.ipynb) for an example of how to use it ([Google Colab](https://colab.research.google.com/drive/1d1MWPaGAqfK6q_5879LpwwxPCB-tbExe?usp=sharing)).
 
 All methods are also available as separate functions, see below.
 
