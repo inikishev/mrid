@@ -114,3 +114,13 @@ dcm2niix is much slower compared to SimpleITK's series reader which mrid uses by
 ```python
 seg = mrid.utils.stl2sitk("path/to/file.stl", reference) # returns sitk.Image (hopefully) aligned with `reference`
 ```
+
+## How to install
+Either run
+```
+pip install mrid-python
+```
+or
+```
+pip install git+https://github.com/inikishev/mrid
+```
