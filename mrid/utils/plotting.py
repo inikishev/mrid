@@ -48,10 +48,10 @@ def visualize_3d_arrays(data: Mapping[str, np.ndarray]):
                     img_slice = volume[slice_loc, :, :]
                     row_label = f"Dim 0\n(Slice {slice_loc})"
                 elif dim_idx == 1:
-                    img_slice = np.flip(volume[:, slice_loc, :], 0)
+                    img_slice = volume[:, slice_loc, :]
                     row_label = f"Dim 1\n(Slice {slice_loc})"
                 else: # dim_idx == 2
-                    img_slice = np.flip(volume[:, :, slice_loc], 0)
+                    img_slice = volume[:, :, slice_loc]
                     row_label = f"Dim 2\n(Slice {slice_loc})"
 
                 # Plot image

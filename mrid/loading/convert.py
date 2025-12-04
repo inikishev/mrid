@@ -1,3 +1,4 @@
+import importlib.util
 import os
 from typing import TYPE_CHECKING, TypeAlias
 
@@ -9,10 +10,17 @@ from ..utils.torch_utils import TORCH_INSTALLED
 if TYPE_CHECKING:
     import torch
 
+PREFER_DCM2NIIX = True
 ImageLike: TypeAlias = "np.ndarray | sitk.Image | torch.Tensor | str | os.PathLike"
 
 def read_dicoms(dir: str | os.PathLike) -> sitk.Image:
     """reads a directory of DICOM files and returns a ``sitk.Image``"""
+    # load with dcm2niix
+    if PREFER_DCM2NIIX and importlib.util.find_spec("dcm2niix") is not None:
+        from ..utils.dcm2niix import dcm2sitk
+        return dcm2sitk(dir)
+
+    # load with SimpleITK
     reader = sitk.ImageSeriesReader()
     dicom_names = reader.GetGDCMSeriesFileNames(str(dir))
 
