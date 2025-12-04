@@ -14,7 +14,7 @@ ImageLike: TypeAlias = "np.ndarray | sitk.Image | torch.Tensor | str | os.PathLi
 def read_dicoms(dir: str | os.PathLike) -> sitk.Image:
     """reads a directory of DICOM files and returns a ``sitk.Image``"""
     reader = sitk.ImageSeriesReader()
-    dicom_names = reader.GetGDCMSeriesFileNames(dir)
+    dicom_names = reader.GetGDCMSeriesFileNames(str(dir))
 
     if not dicom_names:
         raise FileNotFoundError(f"No DICOM series found in directory: {dir}")
@@ -24,7 +24,7 @@ def read_dicoms(dir: str | os.PathLike) -> sitk.Image:
 
 def _read_sitk(path: str | os.PathLike) -> sitk.Image:
     if os.path.isfile(path): return sitk.ReadImage(str(path))
-    if os.path.isdir(path): return read_dicoms(path)
+    if os.path.isdir(path): return read_dicoms(str(path))
     raise FileNotFoundError(f"{path} doesn't exist")
 
 def tositk(x: ImageLike) -> sitk.Image:
