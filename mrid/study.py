@@ -394,8 +394,8 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         Args:
             dir: Directory to load the study from.
-            prefix: Expected prefix of filenames (to be stripped during loading).
-            suffix: Expected suffix of filenames (to be stripped during loading).
+            prefix: Expected prefix of filenames.
+            suffix: Expected suffix of filenames.
             ext: Expected file extension for image files. Default is 'nii.gz'.
             pickle_module: Module used for unpickling info objects. Default is pickle.
         """
@@ -434,8 +434,8 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         Args:
             dir: Directory to load the study from.
-            prefix: Expected prefix of filenames (to be stripped during loading).
-            suffix: Expected suffix of filenames (to be stripped during loading).
+            prefix: Expected prefix of filenames.
+            suffix: Expected suffix of filenames.
             ext: Expected file extension for image files. Default is 'nii.gz'.
             pickle_module: Module used for unpickling info objects. Default is pickle.
         """
