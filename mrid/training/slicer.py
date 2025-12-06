@@ -117,7 +117,7 @@ class SliceSampler:
             if flatten: return tensor[:, coord], seg[coord] # (C, H, W)
             return tensor[None, :, coord], seg[coord] # (1, C, H, W)
 
-        # get slice + neighbouring slices
+        # else get slice + neighbouring slices
         slice = tensor[:, coord - around : coord + around + 1] # (C, D, H, W)
 
         if randflip and random.random() > 0.5:
@@ -159,6 +159,10 @@ class SliceSampler:
             coord = random.choice(indexes)
 
         return self.get_slice(dim=dim, coord=coord, around=around, randflip=randflip, flatten=flatten)
+
+    # an alternative would be to return a list of slices with segmentation, and a list of callables that return
+    # random empty slices. But I've realized the final dataset made of multiple SliceSamplers will then have more
+    # slices from scans with larger segmentations.
 
     def random_empty_callable(
         self, around: int, randflip: bool = True, flatten: bool = True
