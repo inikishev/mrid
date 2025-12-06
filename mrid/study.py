@@ -21,6 +21,21 @@ if TYPE_CHECKING:
 def _identity(x): return x
 
 class Study(UserDict[str, sitk.Image | Any]):
+    """A dictionary of scans, segmentations and other info.
+
+    Segmentations should have keys starting with ``"seg"``, for example ``"seg_tumor"``.
+
+    Non-image values should have keys starting with ``"info"``, for example ``"info_id=12345"``.
+
+    You can pass:
+    - path to file to be opened with SimpleITK (e.g. nii/nii.gz);
+    - path to a DICOM dir, make sure it contains one series.
+    - ``sitk.Image``
+    - ``np.ndarray``
+    - ``torch.Tensor``.
+
+    Everything except info will be converted to ``sitk.Image``.
+    """
     @overload
     def __init__(self, /, **kwargs): ...
     @overload
