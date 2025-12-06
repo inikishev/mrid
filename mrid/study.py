@@ -152,8 +152,12 @@ class Study(UserDict[str, sitk.Image | Any]):
         device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
         disable_tta: bool = False,
         verbose: bool = False,
+
+        include_mask: bool = False,
+        keep_original: bool = False,
+
     ) -> "Study":
-        """Predicts brain mask of ``study[key]``, then uses this mask to skull strip all scans. Doesn't affect segmentations.
+        """Predicts brain mask of ``study[key]``, then uses this mask to skullstrip all scans. Doesn't affect segmentations.
 
         Args:
             key: Key of the image to pass to HD-BET for brain mask prediction.
@@ -166,6 +170,12 @@ class Study(UserDict[str, sitk.Image | Any]):
             disable_tta: Set this flag to disable test time augmentation. This will make prediction faster
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
             verbose: Enable verbose output during processing. Defaults to False.
+            include_mask (bool, optional):
+                if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned Study.
+            keep_original (bool, Optional):
+                if True, skull-stripped images are added to the returned study with ``"_skullstripped"`` postfix,
+                and do not replace original images.
+
         """
         d = preprocessing.skullstripping.skullstrip_D(
             images=self.get_scans(),
@@ -174,6 +184,8 @@ class Study(UserDict[str, sitk.Image | Any]):
             device=device,
             disable_tta=disable_tta,
             verbose=verbose,
+            include_mask=include_mask,
+            keep_original=keep_original,
         )
         return Study(**d, **self.get_segmentations(), **self.get_info())
 
@@ -205,7 +217,7 @@ class Study(UserDict[str, sitk.Image | Any]):
     def register(self, key: str, to: ImageLike, pmap=None, log_to_console=False) -> "Study":
         """Returns a new Study, registers ``study[key]`` to ``to``,
         and use transformation parameters to register all other images including segmentation.
-        This assumes that all images are in the same space, if they are not, use ``register_many`` method.
+        This assumes that all images are aligned, if they are not, use ``register_many`` method.
 
         Args:
             key: The key of the image to use as reference for registration.
@@ -260,18 +272,21 @@ class Study(UserDict[str, sitk.Image | Any]):
             partial(preprocessing.registration.resample_to, to=to, interpolation=sitk.sitkNearestNeighbor),
         )
 
-    def n4_bias_field_correction(self, key: str, shrink: int = 4) -> "Study":
+    def n4_bias_field_correction(self, key: str, shrink: int = 4, postfix: str = "") -> "Study":
         """Returns a new study with corrected bias field of the image under ``key``. Doesn't affect other images.
 
         Args:
-            key: The key of the image for which to correct the bias field.
-            shrink: By how many times to shrink the size of input image for calculating the bias field.
+            key (str): The key of the image for which to correct the bias field.
+            shrink (int, optional): By how many times to shrink the size of input image for calculating the bias field.
                 The bias field is then applied to original size (unshrunk) image.
                 Setting shrink to 1 disables it, but n4 algorithm may take several minutes.
                 Setting it to ~4 is good enough in most cases and will be significantly faster (usually few seconds).
+            postfix (str, optional):
+                if specified, N4-corrected image is added to returned study with specified postfix rather than
+                replacing current ``key``.
         """
         new = self.copy()
-        new[key] = preprocessing.bias_field_correction.n4_bias_field_correction(new[key], shrink=shrink)
+        new[f"{key}{postfix}"] = preprocessing.bias_field_correction.n4_bias_field_correction(new[key], shrink=shrink)
         return new
 
     def numpy(self, key: str):

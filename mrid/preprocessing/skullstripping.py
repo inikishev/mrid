@@ -151,6 +151,8 @@ def skullstrip_D(
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
     disable_tta: bool = False,
     verbose: bool = False,
+    include_mask: bool = False,
+    keep_original: bool = False,
 ) -> dict[str, sitk.Image]:
     """Predicts brain mask of ``images[key]``, then uses this mask to skull strip all values in ``images``.
 
@@ -169,17 +171,30 @@ def skullstrip_D(
             Set this flag to disable test time augmentation. This will make prediction faster
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): purpose currently unknown. Defaults to False.
+        include_mask (bool, optional):
+            if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned dictionary.
+        keep_original (bool, Optional):
+            if True, skull-stripped images are added to the dictionary
+            with ``"_skullstripped" ``postfix, rather than replacing.
     """
     images = {k: tositk(v) for k,v in images.items()}
 
     mask = predict_brain_mask(input=images[key], register_to_mni152=register_to_mni152,
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
-
     skullstripped = {}
     for k,v in images.items():
         mask_v = sitk.Cast(mask, v.GetPixelID())
         skullstripped[k] = sitk.Multiply(v, mask_v)
+
+    if keep_original:
+        skullstripped = {f"{k}_skullstripped": v for k,v in skullstripped}
+        skullstripped.update(images.copy())
+
+    if include_mask:
+        mask_sitk = tositk(mask)
+        mask_sitk.CopyInformation(images[key])
+        skullstripped["seg_brain"] = mask_sitk
 
     return skullstripped
 
