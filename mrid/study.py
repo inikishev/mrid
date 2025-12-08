@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Literal, overload
 import numpy as np
 import SimpleITK as sitk
 
-from . import preprocessing
+from . import preprocessing, postprocessing
 from .loading.convert import ImageLike, tonumpy, tositk, totensor
 from .utils.torch_utils import CUDA_IF_AVAILABLE
 
@@ -311,6 +311,22 @@ class Study(UserDict[str, sitk.Image | Any]):
         new = self.copy()
         new[f"{key}{postfix}"] = preprocessing.bias_field_correction.n4_bias_field_correction(new[key], shrink=shrink)
         return new
+
+    def expand_binary_mask(self, key: str, expand: int, postfix: str = ""):
+        """Returns a new study with binary mask under ``key`` expanded or dilated by ``expand`` pixels.
+        Args:
+            key (str): The key of the mask to expand/dilate.
+            expand (int, optional):
+                Positive values expand the mask by this many pixels;
+                Negative values dilate the mask by this many pixels.
+            postfix (str, optional):
+                if specified, expanded/dilated mask is added to returned study with specified postfix rather than
+                replacing current ``key``.
+        """
+        new = self.copy()
+        new[f"{key}{postfix}"] = postprocessing.expand_binary_mask(new[key], expand=expand)
+        return new
+
 
     def numpy(self, key: str):
         """returns ``study[key]`` converted to a numpy array."""
