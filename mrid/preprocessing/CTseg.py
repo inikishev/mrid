@@ -38,9 +38,9 @@ def run_CTseg(
             # -t (tty): Allocates a pseudo-TTY, which makes the container behave like a normal terminal session.
         "-it",
 
-         # -v used for mounting volumes, which allows you to connect a file path on your host machine to a path inside the container. This option requires a specific format: -v <host_path>:<container_path>.
+        # -v used for mounting volumes, which allows you to connect a file path on your host machine to a path inside the container. This option requires a specific format: -v <host_path>:<container_path>.
         "-v",
-        f"{ct_nii_file.parent.name}:/data",
+        f"{os.path.normpath(ct_nii_file.parent)}:/data",
 
         # docker image name
         docker_image,
@@ -49,7 +49,7 @@ def run_CTseg(
         "spm_CTseg",
 
         # path to CT scan
-        ct_nii_file.name,
+        f"/data/{ct_nii_file.name}",
     ]
 
     # run dcm2niix
