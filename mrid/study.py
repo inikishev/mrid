@@ -24,6 +24,7 @@ class Study(UserDict[str, sitk.Image | Any]):
     """A dictionary of scans, segmentations and other info.
 
     Segmentations should have keys starting with ``"seg"``, for example ``"seg_tumor"``.
+    Segmentation should NOT be one-hot encoded.
 
     Non-image values should have keys starting with ``"info"``, for example ``"info_id=12345"``.
 
@@ -326,6 +327,75 @@ class Study(UserDict[str, sitk.Image | Any]):
         new = self.copy()
         new[f"{key}{postfix}"] = postprocessing.expand_binary_mask(new[key], expand=expand)
         return new
+
+    def remove_small_objects(self, key: str, min_size=64, connectivity=1, independent_channels: bool = False, postfix: str = ""):
+        """Returns a new study with small objects removed in mask under ``key``,
+        this uses ``skimage.morphology.remove-small-objects`` or
+        ``monai.transforms.remove_small_objects``.
+
+        See: https://scikit-image.org/docs/dev/api/skimage.morphology.html#remove-small-objects.
+
+        Args:
+            key (str): The key of the mask to remove small objects in.
+            min_size (int, optional): objects smaller than this size are removed. Defaults to 64.
+            connectivity (int, optional):
+                Maximum number of orthogonal hops to consider a pixel/voxel as a neighbor.
+                Accepted values are ranging from 1 to input.ndim.
+                If None, a full connectivity of input.ndim is used.
+                For more details refer to linked scikit-image documentation. Defaults to 1.
+            independent_channels (bool, optional):
+                Whether to consider each channel independently (requires monai). Defaults to False.
+            postfix (str, optional):
+                if specified, processed mask is added to returned study with specified postfix rather than
+                replacing current ``key``.
+        """
+        arr = self.numpy(key)
+
+        if independent_channels:
+            from monai.transforms import remove_small_objects
+            # Data should be one-hotted.
+            num_classes = arr.max() + 1
+            one_hot = np.zeros((num_classes, *arr.shape))
+            i, j, k = np.indices(arr.shape)
+            one_hot[arr[i,j,k], i, j, k] = 1
+            one_hot = remove_small_objects(
+                one_hot, min_size=min_size, connectivity=connectivity, independent_channels=independent_channels)
+            arr = one_hot.argmax(0)
+            return self.add(f'{key}{postfix}', arr, reference_key=key)
+
+        from skimage.morphology import remove_small_objects
+        binary = (arr != 0)
+        arr *= remove_small_objects(binary, min_size=min_size, connectivity=connectivity)
+        return self.add(f'{key}{postfix}', arr, reference_key=key)
+
+    def keep_largest_connected_component(self, key: str, applied_labels=None, independent=True, connectivity=None, num_components=1, postfix: str = ""):
+        """Returns a new study with largest components kept in mask under ``key``,
+        this uses ``monai.transforms.KeepLargestConnectedComponent``.
+
+        Args:
+            key (str): The key of the mask to remove keep largest components in.
+            applied_labels: Labels for applying the connected component analysis on.
+                If given, voxels whose value is in this list will be analyzed.
+                If `None`, all non-zero values will be analyzed.
+            independent: whether to treat ``applied_labels`` as a union of foreground labels.
+                If ``True``, the connected component analysis will be performed on each foreground label independently
+                and return the intersection of the largest components.
+                If ``False``, the analysis will be performed on the union of foreground labels.
+                default is `True`.
+            connectivity: Maximum number of orthogonal hops to consider a pixel/voxel as a neighbor.
+                Accepted values are ranging from  1 to input.ndim. If ``None``, a full
+                connectivity of ``input.ndim`` is used. for more details:
+                https://scikit-image.org/docs/dev/api/skimage.measure.html#skimage.measure.label.
+            num_components: The number of largest components to preserve.
+            postfix (str, optional):
+                if specified, processed mask is added to returned study with specified postfix rather than
+                replacing current ``key``.
+        """
+        from monai.transforms import KeepLargestConnectedComponent
+        tfm = KeepLargestConnectedComponent(applied_labels=applied_labels, is_onehot=False, independent=independent,
+                                            connectivity=connectivity, num_components=num_components)
+        arr = tfm(self.numpy(key))
+        return self.add(f'{key}{postfix}', arr, reference_key=key)
 
 
     def numpy(self, key: str):
