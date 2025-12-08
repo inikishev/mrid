@@ -171,26 +171,33 @@ class Study(UserDict[str, sitk.Image | Any]):
         include_mask: bool = False,
         keep_original: bool = False,
 
+        expand: int = 0,
     ) -> "Study":
         """Predicts brain mask of ``study[key]``, then uses this mask to skullstrip all scans. Doesn't affect segmentations.
 
         Args:
             key: Key of the image to pass to HD-BET for brain mask prediction.
-            register_to_mni152: Should be ``"T1"``, ``"T2"`` or ``None``.
+            register_to_mni152:
+                Should be ``"T1"``, ``"T2"`` or ``None``.
                 If specified, ``input`` will be registered to specified MNI152 template,
-            then after prediction the brain mask registered back to original ``input``.
+                then after prediction the brain mask registered back to original ``input``.
                 Note that HD-BET expects images to be in MNI152 space. Defaults to None.
-            device: Used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
+            device:
+                Used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
                 Defaults to CUDA_IF_AVAILABLE.
-            disable_tta: Set this flag to disable test time augmentation. This will make prediction faster
+            disable_tta:
+                Set this flag to disable test time augmentation. This will make prediction faster
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
             verbose: Enable verbose output during processing. Defaults to False.
             include_mask (bool, optional):
-                if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned Study.
+                if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned dictionary.
+                This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
             keep_original (bool, Optional):
                 if True, skull-stripped images are added to the returned study with ``"_skullstripped"`` postfix,
                 and do not replace original images.
-
+            expand (int, optional):
+                Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+                Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
         """
         d = preprocessing.hd_bet.skullstrip_D_mri(
             images=self.get_scans(),
@@ -201,6 +208,7 @@ class Study(UserDict[str, sitk.Image | Any]):
             verbose=verbose,
             include_mask=include_mask,
             keep_original=keep_original,
+            expand=expand,
         )
         return Study(**d, **self.get_segmentations(), **self.get_info())
 

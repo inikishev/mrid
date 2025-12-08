@@ -141,8 +141,8 @@ def skullstrip_mri(
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): purpose currently unknown. Defaults to False.
         expand (int, optional):
-            Positive values expand the mask by this many pixels, meaning inner parts of the skull will be included;
-            Negative values dilate the mask by this many pixels, meaning outer parts of the brain will be excluded.
+            Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+            Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
 
     """
     input = tositk(input)
@@ -193,8 +193,8 @@ def skullstrip_D_mri(
             if True, skull-stripped images are added to the dictionary
             with ``"_skullstripped" ``postfix, rather than replacing.
         expand (int, optional):
-            Positive values expand the mask by this many pixels, meaning inner parts of the skull will be included;
-            Negative values dilate the mask by this many pixels, meaning outer parts of the brain will be excluded.
+            Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+            Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
     """
     images = {k: tositk(v) for k,v in images.items()}
 
