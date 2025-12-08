@@ -44,6 +44,8 @@ class SliceSampler:
             raise RuntimeError(f"Segmentation must have integer data type, got {segmentation.dtype}")
         if segmentation.shape[1:] != data.shape:
             raise RuntimeError(f"Shapes of scans and segmentation do not match: {data.shape = }, {segmentation.shape = }")
+        if segmentation.min() < 0:
+            raise RuntimeError(f"Segmentation background must have a value of 0, got {segmentation.min() = }")
 
         self.data = data
         self.segmentation = segmentation

@@ -178,7 +178,7 @@ class Study(UserDict[str, sitk.Image | Any]):
             key: Key of the image to pass to HD-BET for brain mask prediction.
             register_to_mni152: Should be ``"T1"``, ``"T2"`` or ``None``.
                 If specified, ``input`` will be registered to specified MNI152 template,
-                and brain mask registered back to original ``input``.
+            then after prediction the brain mask registered back to original ``input``.
                 Note that HD-BET expects images to be in MNI152 space. Defaults to None.
             device: Used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
                 Defaults to CUDA_IF_AVAILABLE.

@@ -71,7 +71,7 @@ def predict_brain_mask_mri(
         register_to_mni152 (str | None, optional):
             Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
-            and brain mask registered back to original ``input``.
+            then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
         device (str, optional):
             used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
@@ -108,9 +108,12 @@ def predict_brain_mask_mri(
     if register_to_mni152 is not None:
         study_mni = dict(image=input_mni, seg_brain=brain_mask_mni)
         study = register_D(study_mni, key="image", to=input)
-        return study["seg_brain"]
+        brain_mask = study["seg_brain"]
 
-    return brain_mask_mni
+    else:
+        brain_mask = brain_mask_mni
+
+    return brain_mask
 
 def skullstrip_mri(
     input: ImageLike,
@@ -118,6 +121,8 @@ def skullstrip_mri(
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
     disable_tta: bool = False,
     verbose: bool = False,
+
+    expand: int = 0,
 ) -> sitk.Image:
     """Skullstrips ``input`` using HD-BET.
 
@@ -126,7 +131,7 @@ def skullstrip_mri(
         register_to_mni152 (str | None, optional):
             Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
-            and brain mask registered back to original ``input``.
+            then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
         device (str, optional):
             used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
@@ -135,10 +140,18 @@ def skullstrip_mri(
             Set this flag to disable test time augmentation. This will make prediction faster
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): purpose currently unknown. Defaults to False.
+        expand (int, optional):
+            Positive values expand the mask by this many pixels, meaning inner parts of the skull will be included;
+            Negative values dilate the mask by this many pixels, meaning outer parts of the brain will be excluded.
+
     """
     input = tositk(input)
     mask = predict_brain_mask_mri(input=input, register_to_mni152=register_to_mni152,
-                          device=device, disable_tta=disable_tta, verbose=verbose)
+                                  device=device, disable_tta=disable_tta, verbose=verbose)
+
+    if expand != 0:
+        from ..postprocessing.mask import expand_binary_mask
+        mask = expand_binary_mask(mask, expand=expand)
 
     mask = sitk.Cast(mask, input.GetPixelID())
     return sitk.Multiply(input, mask)
@@ -153,6 +166,8 @@ def skullstrip_D_mri(
     verbose: bool = False,
     include_mask: bool = False,
     keep_original: bool = False,
+
+    expand: int = 0,
 ) -> dict[str, sitk.Image]:
     """Predicts brain mask of ``images[key]``, then uses this mask to skull strip all values in ``images``.
 
@@ -162,7 +177,7 @@ def skullstrip_D_mri(
         register_to_mni152 (str | None, optional):
             Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
-            and brain mask registered back to original ``input``.
+            then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
         device (str, optional):
             used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
@@ -173,9 +188,13 @@ def skullstrip_D_mri(
         verbose (bool, optional): purpose currently unknown. Defaults to False.
         include_mask (bool, optional):
             if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned dictionary.
+            This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
         keep_original (bool, Optional):
             if True, skull-stripped images are added to the dictionary
             with ``"_skullstripped" ``postfix, rather than replacing.
+        expand (int, optional):
+            Positive values expand the mask by this many pixels, meaning inner parts of the skull will be included;
+            Negative values dilate the mask by this many pixels, meaning outer parts of the brain will be excluded.
     """
     images = {k: tositk(v) for k,v in images.items()}
 
@@ -183,18 +202,27 @@ def skullstrip_D_mri(
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
     skullstripped = {}
-    for k,v in images.items():
-        mask_v = sitk.Cast(mask, v.GetPixelID())
-        skullstripped[k] = sitk.Multiply(v, mask_v)
 
-    if keep_original:
-        skullstripped = {f"{k}_skullstripped": v for k,v in skullstripped}
-        skullstripped.update(images.copy())
-
+    # include mask before expanding
     if include_mask:
         mask_sitk = tositk(mask)
         mask_sitk.CopyInformation(images[key])
         skullstripped["seg_brain"] = mask_sitk
+
+    # expand
+    if expand != 0:
+        from ..postprocessing.mask import expand_binary_mask
+        mask = expand_binary_mask(mask, expand=expand)
+
+    # apply mask
+    for k,v in images.items():
+        mask_v = sitk.Cast(mask, v.GetPixelID())
+        skullstripped[k] = sitk.Multiply(v, mask_v)
+
+    # optionally add with skullstripped postfix
+    if keep_original:
+        skullstripped = {f"{k}_skullstripped": v for k,v in skullstripped}
+        skullstripped.update(images.copy())
 
     return skullstripped
 
