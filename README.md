@@ -70,13 +70,13 @@ seg = (mrid.tonumpy(t2_sri24) > 100).astype(np.uint8)
 seg_orig = reg.apply_inverse_transform(seg, use_nearest_interpolation=True) # returns sitk.Image
 ```
 
-## Skullstripping
+## Skullstripping MRI
 
-For skullstripping mrid uses HD-BET model (<https://github.com/MIC-DKFZ/HD-BET>), and you need to have it installed (it uses torch). It works with pre/post contrast T1, T2 and FLAIR MRIs, but it expects them to be in MNI152 space (while many new datasets like BraTS are in SRI24). If your scans aren't in MNI152, the `skullstrip` function can register specified scan to MNI152, pass it to HD-BET, and then register back to original space, if `register_to_mni152` argument is specified.
+For skullstripping MRIs mrid uses HD-BET model (<https://github.com/MIC-DKFZ/HD-BET>), and you need to have it installed (it uses torch). It works with pre/post contrast T1, T2 and FLAIR MRIs, but it expects them to be in MNI152 space (while many new datasets like BraTS are in SRI24). If your scans aren't in MNI152, the `skullstrip` function can register specified scan to MNI152, pass it to HD-BET, and then register back to original space, if `register_to_mni152` argument is specified.
 
 ```python
-t1_skullstripped = mrid.skullstrip(t1) # if t1 is in MNI152
-t1_skullstripped = mrid.skullstrip(t1, register_to_mni152="T1") # if t1 is not in MNI152
+t1_skullstripped = mrid.skullstrip_mri(t1) # if t1 is in MNI152
+t1_skullstripped = mrid.skullstrip_mri(t1, register_to_mni152="T1") # if t1 is not in MNI152
 ```
 
 HD-BET is generally very robust but it can remove parts of tumors adjascent to the skull, but this is true for all skullstripping tools.
@@ -87,8 +87,21 @@ If you have multiple scans that are already aligned, you can compute brain mask 
 
 ```python
 data = {"t1": "t1c.nii.gz", "t2": "t2w.nii.gz", "flair": "t2f.nii.gz"}
-skullstripped_data = mrid.skullstrip_D(data, key="t1", to=mrid.get_sri24("T1"))
+skullstripped_data = mrid.skullstrip_D_mri(data, key="t1", to=mrid.get_sri24("T1"))
 # dict of skullstripped sitk.Image
+```
+
+## CTseg
+
+mrid provides a wrapper for [CTseg](https://github.com/WCHN/CTseg) docker container. This can skull-strip CT scans and segment multiple regions.
+
+CTseg docker installation is outlined in https://github.com/WCHN/CTseg in "Docker" section, don't worry, it's easy to install via a single command.
+
+After it is done, the CTseg functions from mrid can be used.
+
+```python
+# direct wrapper for CTseg, will save all outputs of CTseg to the same directory as CT.nii
+mrid.utils.run_CTseg("path/to/CT.nii")
 ```
 
 ## dcm2niix
