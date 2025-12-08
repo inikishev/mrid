@@ -187,7 +187,7 @@ def skullstrip_D_mri(
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): purpose currently unknown. Defaults to False.
         include_mask (bool, optional):
-            if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned dictionary.
+            if True, adds ``"seg_seg_hdbet"`` with brain mask predicted by HD-BET to returned dictionary.
             This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
         keep_original (bool, Optional):
             if True, skull-stripped images are added to the dictionary
@@ -207,7 +207,7 @@ def skullstrip_D_mri(
     if include_mask:
         mask_sitk = tositk(mask)
         mask_sitk.CopyInformation(images[key])
-        skullstripped["seg_brain"] = mask_sitk
+        skullstripped["seg_hdbet"] = mask_sitk
 
     # expand
     if expand != 0:

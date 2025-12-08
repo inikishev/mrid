@@ -36,6 +36,8 @@ class Study(UserDict[str, sitk.Image | Any]):
     - ``torch.Tensor``.
 
     Everything except info will be converted to ``sitk.Image``.
+
+    Please note that multi-channel scans are currently not supported.
     """
     @overload
     def __init__(self, /, **kwargs): ...
@@ -191,7 +193,7 @@ class Study(UserDict[str, sitk.Image | Any]):
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
             verbose: Enable verbose output during processing. Defaults to False.
             include_mask (bool, optional):
-                if True, adds ``"seg_brain"`` with brain mask predicted by HD-BET to returned dictionary.
+                if True, adds ``"seg_hdbet"`` with brain mask predicted by HD-BET to returned dictionary.
                 This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
             keep_original (bool, Optional):
                 if True, skull-stripped images are added to the returned study with ``"_skullstripped"`` postfix,
@@ -218,7 +220,7 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         Args:
             size: Target size as a sequence of integers (e.g., [height, width, depth]).
-            interpolator: Interpolation method for regular images (segmentations always use nearest neighbor).
+            interpolator: Interpolation method for scans (segmentations always use nearest neighbor).
         """
         return self.apply(
             partial(preprocessing.registration.resize, new_size=size, interpolator=interpolator,),
@@ -226,12 +228,14 @@ class Study(UserDict[str, sitk.Image | Any]):
         )
 
     def downsample(self, factor: float, dims = None, interpolator=sitk.sitkLinear):
-        """Downsample all images. Factor = 2 for 2x downsampling. Dims ``None`` for all dims.
+        """Downsample all images along ``dims``.
+        For example, ``factor=2`` for 2x downsampling.
+        Set dims to ``None`` for all dims.
 
         Args:
             factor: Downsampling factor (e.g., 2 for 2x downsampling).
             dims: Specific dimensions to downsample, or None for all dimensions.
-            interpolator: Interpolation method for regular images (segmentations always use nearest neighbor).
+            interpolator: Interpolation method for scans (segmentations always use nearest neighbor).
         """
         return self.apply(
             partial(preprocessing.registration.downsample, factor=factor, dims=dims, interpolator=interpolator,),
@@ -315,6 +319,7 @@ class Study(UserDict[str, sitk.Image | Any]):
 
     def expand_binary_mask(self, key: str, expand: int, postfix: str = ""):
         """Returns a new study with binary mask under ``key`` expanded or dilated by ``expand`` pixels.
+
         Args:
             key (str): The key of the mask to expand/dilate.
             expand (int, optional):
@@ -328,7 +333,14 @@ class Study(UserDict[str, sitk.Image | Any]):
         new[f"{key}{postfix}"] = postprocessing.expand_binary_mask(new[key], expand=expand)
         return new
 
-    def remove_small_objects(self, key: str, min_size=64, connectivity=1, independent_channels: bool = False, postfix: str = ""):
+    def remove_small_objects(
+        self,
+        key: str,
+        min_size=64,
+        connectivity=1,
+        independent_channels: bool = False,
+        postfix: str = "",
+    ):
         """Returns a new study with small objects removed in mask under ``key``,
         this uses ``skimage.morphology.remove-small-objects`` or
         ``monai.transforms.remove_small_objects``.
