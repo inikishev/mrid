@@ -57,7 +57,7 @@ def run_hd_bet(
     subprocess.run(command, check=True)
 
 
-def predict_brain_mask(
+def predict_brain_mask_mri(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -112,7 +112,7 @@ def predict_brain_mask(
 
     return brain_mask_mni
 
-def skullstrip(
+def skullstrip_mri(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -137,14 +137,14 @@ def skullstrip(
         verbose (bool, optional): purpose currently unknown. Defaults to False.
     """
     input = tositk(input)
-    mask = predict_brain_mask(input=input, register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask_mri(input=input, register_to_mni152=register_to_mni152,
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
     mask = sitk.Cast(mask, input.GetPixelID())
     return sitk.Multiply(input, mask)
 
 
-def skullstrip_D(
+def skullstrip_D_mri(
     images: Mapping[str, ImageLike],
     key: str,
     register_to_mni152: Literal["T1", "T2"] | None = None,
@@ -179,7 +179,7 @@ def skullstrip_D(
     """
     images = {k: tositk(v) for k,v in images.items()}
 
-    mask = predict_brain_mask(input=images[key], register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask_mri(input=images[key], register_to_mni152=register_to_mni152,
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
     skullstripped = {}

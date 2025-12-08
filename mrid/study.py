@@ -160,7 +160,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         d = preprocessing.cropping.crop_bg_D(self.get_images(), key)
         return Study(**d, **self.get_info())
 
-    def skullstrip(
+    def skullstrip_mri(
         self,
         key: str,
         register_to_mni152: Literal["T1", "T2"] | None = None,
@@ -192,7 +192,7 @@ class Study(UserDict[str, sitk.Image | Any]):
                 and do not replace original images.
 
         """
-        d = preprocessing.skullstripping.skullstrip_D(
+        d = preprocessing.hd_bet.skullstrip_D_mri(
             images=self.get_scans(),
             key=key,
             register_to_mni152=register_to_mni152,
