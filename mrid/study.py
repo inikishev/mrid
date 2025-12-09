@@ -181,7 +181,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         Args:
             key: Key of the image to pass to HD-BET for brain mask prediction.
             register_to_mni152:
-                Should be ``"T1"``, ``"T2"`` or ``None``.
+                Modality of MNI152 template to pre-register ``study[key]`` to. Should be ``"T1"``, ``"T2"`` or ``None``.
                 If specified, ``input`` will be registered to specified MNI152 template,
                 then after prediction the brain mask registered back to original ``input``.
                 Note that HD-BET expects images to be in MNI152 space. Defaults to None.
@@ -191,7 +191,7 @@ class Study(UserDict[str, sitk.Image | Any]):
             disable_tta:
                 Set this flag to disable test time augmentation. This will make prediction faster
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
-            verbose: Enable verbose output during processing. Defaults to False.
+        verbose (bool, optional): Talk to me. Defaults to False.
             include_mask (bool, optional):
                 if True, adds ``"seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
                 This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
@@ -223,8 +223,8 @@ class Study(UserDict[str, sitk.Image | Any]):
             interpolator: Interpolation method for scans (segmentations always use nearest neighbor).
         """
         return self.apply(
-            partial(preprocessing.registration.resize, new_size=size, interpolator=interpolator,),
-            partial(preprocessing.registration.resize, new_size=size, interpolator=sitk.sitkNearestNeighbor,),
+            partial(preprocessing.simple_elastix.resize, new_size=size, interpolator=interpolator,),
+            partial(preprocessing.simple_elastix.resize, new_size=size, interpolator=sitk.sitkNearestNeighbor,),
         )
 
     def downsample(self, factor: float, dims = None, interpolator=sitk.sitkLinear):
@@ -238,8 +238,8 @@ class Study(UserDict[str, sitk.Image | Any]):
             interpolator: Interpolation method for scans (segmentations always use nearest neighbor).
         """
         return self.apply(
-            partial(preprocessing.registration.downsample, factor=factor, dims=dims, interpolator=interpolator,),
-            partial(preprocessing.registration.downsample, factor=factor, dims=dims, interpolator=sitk.sitkNearestNeighbor,),
+            partial(preprocessing.simple_elastix.downsample, factor=factor, dims=dims, interpolator=interpolator,),
+            partial(preprocessing.simple_elastix.downsample, factor=factor, dims=dims, interpolator=sitk.sitkNearestNeighbor,),
         )
 
     def register(self, key: str, to: ImageLike, pmap=None, log_to_console=False) -> "Study":
@@ -253,7 +253,7 @@ class Study(UserDict[str, sitk.Image | Any]):
             pmap: Parameter map for registration. If None, uses default parameters.
             log_to_console: Whether to log registration progress to console.
         """
-        d = preprocessing.registration.register_D(
+        d = preprocessing.simple_elastix.register_D_SE(
             images=self.get_images(),
             key=key,
             to=to,
@@ -282,11 +282,11 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         d = self.get_scans()
         if to is not None:
-            d[key] = preprocessing.registration.register(d[key], to=to, pmap=pmap, log_to_console=log_to_console)
+            d[key] = preprocessing.simple_elastix.register_SE(d[key], to=to, pmap=pmap, log_to_console=log_to_console)
 
         for k in d:
             if k != key:
-                d[k] = preprocessing.registration.register(d[k], to=d[key], pmap=pmap, log_to_console=log_to_console)
+                d[k] = preprocessing.simple_elastix.register_SE(d[k], to=d[key], pmap=pmap, log_to_console=log_to_console)
 
         return Study(**d, **self.get_info())
 
@@ -296,8 +296,8 @@ class Study(UserDict[str, sitk.Image | Any]):
         to = tositk(to)
 
         return self.apply(
-            partial(preprocessing.registration.resample_to, to=to, interpolation=interpolation),
-            partial(preprocessing.registration.resample_to, to=to, interpolation=sitk.sitkNearestNeighbor),
+            partial(preprocessing.simple_elastix.resample_to, to=to, interpolation=interpolation),
+            partial(preprocessing.simple_elastix.resample_to, to=to, interpolation=sitk.sitkNearestNeighbor),
         )
 
     def n4_bias_field_correction(self, key: str, shrink: int = 4, postfix: str = "") -> "Study":

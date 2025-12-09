@@ -17,16 +17,34 @@ from pathlib import Path
 
 from ..loading import tositk
 
-
 def run_CTseg(
-    ct_nii_file: str | os.PathLike,
+    pth_ct: str | os.PathLike,
+    dir_out: str = "",
     docker_image = "ubuntu:ctseg",
 ) -> None:
+    """Runs ``CTseg`` via ``subprocess.run``.
+
+    Args:
+        pth_ct (str | os.PathLike): path to a file which must be in a ``*.nii`` format.
+        dir_out (str, optional):
+            optional name of a directory that will be created next to ``path_ct`` nii file to save CTseg outputs to.
+            If empty, outputs are saved next to ``path_ct`` file. Defaults to ''.
+        docker_image (str, optional): name of the docker image that ``CTseg`` is installed in. Defaults to "ubuntu:ctseg".
+    """
 
     # docker run --rm -it -v "/home/jj/data":/data ubuntu:ctseg function spm_CTseg '/data/CT.nii'
     # better
     # docker run --rm -it -v "/home/jj/data":/data ubuntu:ctseg eval "spm_CTseg('/data/CT.nii', '', true, true, true, true, 1.0)"
-    ct_nii_file = Path(ct_nii_file)
+    pth_ct = Path(pth_ct)
+
+    if dir_out != "":
+        if "/" in dir_out or "\\" in dir_out:
+            raise RuntimeError(
+                "dir_out should be name of directory that will be created next to `path_ct`. "
+                f"It can't be a path. Got '{dir_out}'"
+            )
+
+        dir_out = f"/data/{dir_out}"
 
     command = [
         "docker",
@@ -37,22 +55,27 @@ def run_CTseg(
 
         # This is a combination of two flags, -i and -t:
             # -i (interactive): Keeps the standard input (STDIN) open, allowing you to interact with the container.
-            # -t (tty): Allocates a pseudo-TTY, which makes the container behave like a normal terminal session.
-        "-it",
+            # -t (tty): Allocates a pseudo-TTY, which makes the container behave like a normal terminal session. (doesn't work with subprocess)
+        #"-it",
+        "-i",
 
         # -v used for mounting volumes, which allows you to connect a file path on your host machine to a path inside the container. This option requires a specific format: -v <host_path>:<container_path>.
         "-v",
-        f"{os.path.normpath(ct_nii_file.parent)}:/data",
+        f"{os.path.normpath(pth_ct.parent)}:/data",
 
         # docker image name
         docker_image,
 
-        # CTseg func
-        "spm_CTseg",
+        # evaluate matlab code
+        "eval",
 
-        # path to CT scan
-        f"/data/{ct_nii_file.name}",
+        # code to evaluate
+        f"spm_CTseg('/data/{pth_ct.name}', '{dir_out}', true, true, true, true, 1.0)",
     ]
 
     # run dcm2niix
     subprocess.run(command, check=True)
+
+# this creates
+# wc01_1_00001_temp_CT_CTseg.nii
+# wc02_1_00001_temp_CT_CTseg

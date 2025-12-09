@@ -8,7 +8,7 @@ import SimpleITK as sitk
 
 from ..loading.convert import ImageLike, tositk
 from ..utils.torch_utils import CUDA_IF_AVAILABLE
-from .registration import register, register_D
+from .simple_elastix import register_SE, register_D_SE
 
 # hd_bet -h
 
@@ -84,7 +84,7 @@ def predict_brain_mask_hd_bet(
     Args:
         input (ImageLike): input to skullstrip. Recommended T1-w, postcontrast T1-w, T2-w or FLAIR sequence in MNI152 space.
         register_to_mni152 (str | None, optional):
-            Should be ``"T1"``, ``"T2"`` or ``None``.
+            Modality of MNI152 template to pre-register ``input`` to. Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
             then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
@@ -92,9 +92,10 @@ def predict_brain_mask_hd_bet(
             used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'.
             Defaults to CUDA_IF_AVAILABLE.
         disable_tta (bool, optional):
-            Set this flag to disable test time augmentation. This will make prediction faster
-            at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
-        verbose (bool, optional): purpose currently unknown. Defaults to False.
+            Set this flag to disable test time augmentation.
+            This will make prediction faster at a slight decrease in prediction quality.
+            Recommended for device cpu. Defaults to False.
+        verbose (bool, optional): Talk to me. Defaults to False.
     """
     input = tositk(input)
 
@@ -102,7 +103,7 @@ def predict_brain_mask_hd_bet(
     if register_to_mni152 is not None:
         from ..atlas.MNI152 import get_mni152
         mni152 = get_mni152(f"2009a {register_to_mni152}w symmetric", skullstripped=False) # type:ignore
-        input_mni = register(input, mni152)
+        input_mni = register_SE(input, mni152)
 
     else:
         input_mni = input
@@ -122,7 +123,7 @@ def predict_brain_mask_hd_bet(
     # ------------------------- unregister mask if needed ------------------------ #
     if register_to_mni152 is not None:
         study_mni = dict(image=input_mni, seg_brain=brain_mask_mni)
-        study = register_D(study_mni, key="image", to=input)
+        study = register_D_SE(study_mni, key="image", to=input)
         brain_mask = study["seg_brain"]
 
     else:
@@ -144,7 +145,7 @@ def skullstrip_hd_bet(
     Args:
         input (ImageLike): input to skullstrip. Recommended T1-w, postcontrast T1-w, T2-w or FLAIR sequence in MNI152 space.
         register_to_mni152 (str | None, optional):
-            Should be ``"T1"``, ``"T2"`` or ``None``.
+            Modality of MNI152 template to pre-register ``input`` to. Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
             then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
@@ -154,7 +155,7 @@ def skullstrip_hd_bet(
         disable_tta (bool, optional):
             Set this flag to disable test time augmentation. This will make prediction faster
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
-        verbose (bool, optional): purpose currently unknown. Defaults to False.
+        verbose (bool, optional): Talk to me. Defaults to False.
         expand (int, optional):
             Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
             Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
@@ -190,7 +191,7 @@ def skullstrip_D_hd_bet(
         images (Mapping[str, ImageLike]): dictionary of images that align with each other.
         key (str): key of the image to pass to HD-BET for brain mask prediction.
         register_to_mni152 (str | None, optional):
-            Should be ``"T1"``, ``"T2"`` or ``None``.
+            Modality of MNI152 template to pre-register ``input`` to. Should be ``"T1"``, ``"T2"`` or ``None``.
             if specified, ``input`` will be registered to specified MNI152 template,
             then after prediction the brain mask registered back to original ``input``.
             Note that HD-BET expects images to be in MNI152 space. Defaults to None.
@@ -200,7 +201,7 @@ def skullstrip_D_hd_bet(
         disable_tta (bool, optional):
             Set this flag to disable test time augmentation. This will make prediction faster
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
-        verbose (bool, optional): purpose currently unknown. Defaults to False.
+        verbose (bool, optional): Talk to me. Defaults to False.
         include_mask (bool, optional):
             if True, adds ``"seg_seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
             This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
