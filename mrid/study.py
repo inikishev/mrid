@@ -163,7 +163,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         d = preprocessing.cropping.crop_bg_D(self.get_images(), key)
         return Study(**d, **self.get_info())
 
-    def skullstrip_mri(
+    def skullstrip_hd_bet(
         self,
         key: str,
         register_to_mni152: Literal["T1", "T2"] | None = None,
@@ -193,16 +193,16 @@ class Study(UserDict[str, sitk.Image | Any]):
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
             verbose: Enable verbose output during processing. Defaults to False.
             include_mask (bool, optional):
-                if True, adds ``"seg_hdbet"`` with brain mask predicted by HD-BET to returned dictionary.
+                if True, adds ``"seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
                 This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
             keep_original (bool, Optional):
-                if True, skull-stripped images are added to the returned study with ``"_skullstripped"`` postfix,
+                if True, skull-stripped images are added to the returned study with ``"_hd_bet"`` postfix,
                 and do not replace original images.
             expand (int, optional):
                 Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
                 Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
         """
-        d = preprocessing.hd_bet.skullstrip_D_mri(
+        d = preprocessing.hd_bet.skullstrip_D_hd_bet(
             images=self.get_scans(),
             key=key,
             register_to_mni152=register_to_mni152,

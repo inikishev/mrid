@@ -24,6 +24,8 @@ def run_CTseg(
 ) -> None:
 
     # docker run --rm -it -v "/home/jj/data":/data ubuntu:ctseg function spm_CTseg '/data/CT.nii'
+    # better
+    # docker run --rm -it -v "/home/jj/data":/data ubuntu:ctseg eval "spm_CTseg('/data/CT.nii', '', true, true, true, true, 1.0)"
     ct_nii_file = Path(ct_nii_file)
 
     command = [

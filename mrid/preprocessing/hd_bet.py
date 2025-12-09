@@ -10,6 +10,17 @@ from ..loading.convert import ImageLike, tositk
 from ..utils.torch_utils import CUDA_IF_AVAILABLE
 from .registration import register, register_D
 
+# hd_bet -h
+
+# -i INPUT, --input INPUT
+#                         input. Can be either a single file name or an input folder. If file: must be nifti (.nii.gz) and can only be 3D. No support for 4d images, use fslsplit to split 4d sequences into 3d images. If folder: all files ending with .nii.gz within that folder will be brain extracted.
+# -o OUTPUT, --output OUTPUT
+#                         output. Can be either a filename or a folder. If it does not exist, the folder will be created
+# -device DEVICE        used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'. Default: cuda
+# --disable_tta         Set this flag to disable test time augmentation. This will make prediction faster at a slight decrease in prediction quality. Recommended for device cpu
+# --save_bet_mask       Set this flag to keep the bet masks. Otherwise they will be removed once HD_BET is done
+# --no_bet_image        Set this flag to disable generating the skull stripped/brain extracted image. Only makes sense if you also set --save_bet_mask
+# --verbose             Talk to me.
 
 def run_hd_bet(
     input: str | os.PathLike,
@@ -20,26 +31,30 @@ def run_hd_bet(
     no_bet_image: bool = False,
     verbose: bool = False,
 ) -> None:
-    """Loads ``input`` file (ideally T1-w, postcontrast T1-w, T2-w and FLAIR sequences in MNI152 space)
-    and runs HD-BET to generate brain mask.
+    """Run HD-BET, this is a simple subprocess wrapper around HD-BET command-line interface.
 
-    This is a simple wrapper around HD-BET command line interface using subprocess.
-
-    The documentation for hd-bet (copied from ``hd_bet -h``):
-    ```bash
-    hd_bet -h
-
-    -i INPUT, --input INPUT
-                            input. Can be either a single file name or an input folder. If file: must be nifti (.nii.gz) and can only be 3D. No support for 4d images, use fslsplit to split 4d sequences
-                            into 3d images. If folder: all files ending with .nii.gz within that folder will be brain extracted.
-    -o OUTPUT, --output OUTPUT
-                            output. Can be either a filename or a folder. If it does not exist, the folder will be created
-    -device DEVICE        used to set on which device the prediction will run. Can be 'cuda' (=GPU), 'cpu' or 'mps'. Default: cuda
-    --disable_tta         Set this flag to disable test time augmentation. This will make prediction faster at a slight decrease in prediction quality. Recommended for device cpu
-    --save_bet_mask       Set this flag to keep the bet masks. Otherwise they will be removed once HD_BET is done
-    --no_bet_image        Set this flag to disable generating the skull stripped/brain extracted image. Only makes sense if you also set --save_bet_mask
-    --verbose             Talk to me.
-    ```
+    Args:
+        input (str | os.PathLike):
+            input. Can be either a single file name or an input folder.
+            If file: must be nifti (.nii.gz) and can only be 3D.
+            No support for 4d images, use fslsplit to split 4d sequences into 3d images.
+            If folder: all files ending with .nii.gz within that folder will be brain extracted.
+        output (str | os.PathLike):
+            output. Can be either a filename or a folder. If it does not exist, the folder will be created
+        device (str, optional):
+            used to set on which device the prediction will run.
+            Can be 'cuda' (=GPU), 'cpu' or 'mps'. Default: cuda. Defaults to CUDA_IF_AVAILABLE.
+        disable_tta (bool, optional):
+            Set this flag to disable test time augmentation.
+            This will make prediction faster at a slight decrease in prediction quality.
+            Recommended for device cpu. Defaults to False.
+        save_bet_mask (bool, optional):
+            Set this flag to keep the bet masks.
+            Otherwise they will be removed once HD_BET is done. Defaults to True.
+        no_bet_image (bool, optional):
+            Set this flag to disable generating the skull stripped/brain extracted image.
+            Only makes sense if you also set --save_bet_mask. Defaults to False.
+        verbose (bool, optional): Talk to me. Defaults to False.
     """
 
     command = [
@@ -57,7 +72,7 @@ def run_hd_bet(
     subprocess.run(command, check=True)
 
 
-def predict_brain_mask_mri(
+def predict_brain_mask_hd_bet(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -115,7 +130,7 @@ def predict_brain_mask_mri(
 
     return brain_mask
 
-def skullstrip_mri(
+def skullstrip_hd_bet(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -146,7 +161,7 @@ def skullstrip_mri(
 
     """
     input = tositk(input)
-    mask = predict_brain_mask_mri(input=input, register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask_hd_bet(input=input, register_to_mni152=register_to_mni152,
                                   device=device, disable_tta=disable_tta, verbose=verbose)
 
     if expand != 0:
@@ -157,7 +172,7 @@ def skullstrip_mri(
     return sitk.Multiply(input, mask)
 
 
-def skullstrip_D_mri(
+def skullstrip_D_hd_bet(
     images: Mapping[str, ImageLike],
     key: str,
     register_to_mni152: Literal["T1", "T2"] | None = None,
@@ -187,18 +202,18 @@ def skullstrip_D_mri(
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): purpose currently unknown. Defaults to False.
         include_mask (bool, optional):
-            if True, adds ``"seg_seg_hdbet"`` with brain mask predicted by HD-BET to returned dictionary.
+            if True, adds ``"seg_seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
             This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
         keep_original (bool, Optional):
             if True, skull-stripped images are added to the dictionary
-            with ``"_skullstripped" ``postfix, rather than replacing.
+            with ``"_hd_bet" ``postfix, rather than replacing.
         expand (int, optional):
             Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
             Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
     """
     images = {k: tositk(v) for k,v in images.items()}
 
-    mask = predict_brain_mask_mri(input=images[key], register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask_hd_bet(input=images[key], register_to_mni152=register_to_mni152,
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
     skullstripped = {}
@@ -207,7 +222,7 @@ def skullstrip_D_mri(
     if include_mask:
         mask_sitk = tositk(mask)
         mask_sitk.CopyInformation(images[key])
-        skullstripped["seg_hdbet"] = mask_sitk
+        skullstripped["seg_hd_bet"] = mask_sitk
 
     # expand
     if expand != 0:
@@ -221,7 +236,7 @@ def skullstrip_D_mri(
 
     # optionally add with skullstripped postfix
     if keep_original:
-        skullstripped = {f"{k}_skullstripped": v for k,v in skullstripped}
+        skullstripped = {f"{k}_hd_bet": v for k,v in skullstripped}
         skullstripped.update(images.copy())
 
     return skullstripped
