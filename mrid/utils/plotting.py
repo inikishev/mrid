@@ -98,8 +98,8 @@ if __name__ == "__main__":
         return mask
 
     plot_study({
-        "T1 Weighted (Sphere)": dummy_data((60, 60, 60), 'sphere'),
-        "T2 Weighted (Cube)": dummy_data((60, 60, 60), 'cube'),
-        "Proton Density (Noise)": dummy_data((60, 60, 60), 'noise'),
-        "FLAIR (Sphere)": dummy_data((60, 60, 60), 'sphere'),
+        "Sphere": dummy_data((60, 60, 60), 'sphere'),
+        "Cube": dummy_data((60, 60, 60), 'cube'),
+        "Noise": dummy_data((60, 60, 60), 'noise'),
+        "Another sphere": dummy_data((60, 60, 60), 'sphere'),
     })

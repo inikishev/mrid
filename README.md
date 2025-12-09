@@ -2,7 +2,7 @@
 
 mrid is a library for preprocessing of 3D images, particularly medical images.
 
-It provide interfaces for many medical image processing tools such as [SimpleElastix](https://simpleelastix.github.io/), [HD-BET](https://github.com/MIC-DKFZ/HD-BET#Installation), [SynthStrip](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/), [CTSeg](https://github.com/WCHN/CTseg). Note that those libraries are not bundled with mrid, I've included installation instructions in all notebooks.
+It provide interfaces for many medical image processing tools such as [SimpleElastix](https://simpleelastix.github.io/), [HD-BET](https://github.com/MIC-DKFZ/HD-BET#Installation), [SynthStrip](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/), [CTSeg](https://github.com/WCHN/CTseg). Note that those libraries are not bundled, installation instructions are included in all examples below.
 
 ### Installation
 
@@ -17,10 +17,6 @@ or
 ```
 pip install git+https://github.com/inikishev/mrid
 ```
-
-### Basics
-
-The images you pass to all functions in mrid can be path to a .nii.gz file, DICOM directory, sitk.Image, numpy array or torch tensor. All functions return results as `sitk.Image`. If you need a numpy array, you can use `mrid.tonumpy(sitk_image)`.
 
 ### Registering images with SimpleITK-SimpleElastix
 
@@ -55,7 +51,7 @@ Many [BraTS](https://www.synapse.org/brats) datasets are provided as skullstripp
 
 <img width="828" height="849" alt="image" src="https://github.com/user-attachments/assets/f1b38db3-6648-4660-a381-d68a2eb8508d" />
 
-(T1n image looks weird because that's just how it is in the dataset)
+(T1n image looks weird because that's just how it is in the zenodo dataset)
 
 ### References
 The MRIs for all images above are from https://zenodo.org/records/7213153.
