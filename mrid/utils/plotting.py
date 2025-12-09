@@ -1,11 +1,12 @@
 from collections.abc import Mapping
 
-import matplotlib.gridspec as gridspec
-import matplotlib.pyplot as plt
 import numpy as np
 from ..loading import ImageLike, tonumpy
 
 def plot_study(data: Mapping[str, ImageLike]):
+    import matplotlib.gridspec as gridspec
+    import matplotlib.pyplot as plt
+
     data = {k: tonumpy(v) for k,v in data.items()}
     n_vals = len(data)
 
