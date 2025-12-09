@@ -35,10 +35,10 @@ IMAGE AND NOTEBOOK！！！！！
 IMAGE AND NOTEBOOK！！！！！
 
 ### Skullstripping with SynthStrip
+
 [SynthStrip](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/) is a skull-stripping tool that works with many different image types and modalities, including MRI, DWI, CT, PET, etc.
 
 IMAGE AND NOTEBOOK！！！！！
-
 
 ### Skullstripping and segmentation of CT images with CTseg
 
