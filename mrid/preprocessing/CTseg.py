@@ -22,7 +22,7 @@ def run_CTseg(
     dir_out: str = "",
     docker_image = "ubuntu:ctseg",
 ) -> None:
-    """Runs ``CTseg`` via ``subprocess.run``.
+    """Runs ``CTseg`` command-line routine via ``subprocess.run``.
 
     Args:
         pth_ct (str | os.PathLike): path to a file which must be in a ``*.nii`` format.

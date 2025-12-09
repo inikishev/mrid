@@ -8,7 +8,8 @@ import SimpleITK as sitk
 
 from ..loading.convert import ImageLike, tositk
 from ..utils.torch_utils import CUDA_IF_AVAILABLE
-from .simple_elastix import register_SE, register_D_SE
+from .simple_elastix import register, register_D
+from .mask import expand_binary_mask, apply_mask
 
 # hd_bet -h
 
@@ -31,7 +32,7 @@ def run_hd_bet(
     no_bet_image: bool = False,
     verbose: bool = False,
 ) -> None:
-    """Run HD-BET, this is a simple subprocess wrapper around HD-BET command-line interface.
+    """Runs HD-BET command-line routine via ``subprocess.run``.
 
     Args:
         input (str | os.PathLike):
@@ -72,7 +73,7 @@ def run_hd_bet(
     subprocess.run(command, check=True)
 
 
-def predict_brain_mask_hd_bet(
+def predict_brain_mask(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -103,7 +104,7 @@ def predict_brain_mask_hd_bet(
     if register_to_mni152 is not None:
         from ..atlas.MNI152 import get_mni152
         mni152 = get_mni152(f"2009a {register_to_mni152}w symmetric", skullstripped=False) # type:ignore
-        input_mni = register_SE(input, mni152)
+        input_mni = register(input, mni152)
 
     else:
         input_mni = input
@@ -123,7 +124,7 @@ def predict_brain_mask_hd_bet(
     # ------------------------- unregister mask if needed ------------------------ #
     if register_to_mni152 is not None:
         study_mni = dict(image=input_mni, seg_brain=brain_mask_mni)
-        study = register_D_SE(study_mni, key="image", to=input)
+        study = register_D(study_mni, key="image", to=input)
         brain_mask = study["seg_brain"]
 
     else:
@@ -131,7 +132,7 @@ def predict_brain_mask_hd_bet(
 
     return brain_mask
 
-def skullstrip_hd_bet(
+def skullstrip(
     input: ImageLike,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
@@ -162,30 +163,29 @@ def skullstrip_hd_bet(
 
     """
     input = tositk(input)
-    mask = predict_brain_mask_hd_bet(input=input, register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask(input=input, register_to_mni152=register_to_mni152,
                                   device=device, disable_tta=disable_tta, verbose=verbose)
 
     if expand != 0:
-        from ..postprocessing.mask import expand_binary_mask
         mask = expand_binary_mask(mask, expand=expand)
 
-    mask = sitk.Cast(mask, input.GetPixelID())
-    return sitk.Multiply(input, mask)
+    return apply_mask(input, mask)
 
 
-def skullstrip_D_hd_bet(
+def skullstrip_D(
     images: Mapping[str, ImageLike],
     key: str,
     register_to_mni152: Literal["T1", "T2"] | None = None,
     device: Literal["cpu", "cuda", "mps"] = CUDA_IF_AVAILABLE,
     disable_tta: bool = False,
     verbose: bool = False,
-    include_mask: bool = False,
-    keep_original: bool = False,
 
     expand: int = 0,
+
+    include_mask: bool = False,
+    keep_original: bool = False,
 ) -> dict[str, sitk.Image]:
-    """Predicts brain mask of ``images[key]``, then uses this mask to skull strip all values in ``images``.
+    """Predicts brain mask of ``images[key]`` using HD-BET, then uses this mask to skull strip all values in ``images``.
 
     Args:
         images (Mapping[str, ImageLike]): dictionary of images that align with each other.
@@ -202,19 +202,19 @@ def skullstrip_D_hd_bet(
             Set this flag to disable test time augmentation. This will make prediction faster
             at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
         verbose (bool, optional): Talk to me. Defaults to False.
+        expand (int, optional):
+            Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+            Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
         include_mask (bool, optional):
             if True, adds ``"seg_seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
             This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
         keep_original (bool, Optional):
             if True, skull-stripped images are added to the dictionary
             with ``"_hd_bet" ``postfix, rather than replacing.
-        expand (int, optional):
-            Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
-            Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
     """
     images = {k: tositk(v) for k,v in images.items()}
 
-    mask = predict_brain_mask_hd_bet(input=images[key], register_to_mni152=register_to_mni152,
+    mask = predict_brain_mask(input=images[key], register_to_mni152=register_to_mni152,
                           device=device, disable_tta=disable_tta, verbose=verbose)
 
     skullstripped = {}
@@ -227,13 +227,11 @@ def skullstrip_D_hd_bet(
 
     # expand
     if expand != 0:
-        from ..postprocessing.mask import expand_binary_mask
         mask = expand_binary_mask(mask, expand=expand)
 
     # apply mask
     for k,v in images.items():
-        mask_v = sitk.Cast(mask, v.GetPixelID())
-        skullstripped[k] = sitk.Multiply(v, mask_v)
+        skullstripped[k] = apply_mask(v, mask)
 
     # optionally add with skullstripped postfix
     if keep_original:

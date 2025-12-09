@@ -116,7 +116,7 @@ class SimpleElastix:
         return self.inverse.apply_transform(input, use_nearest_interpolation=use_nearest_interpolation)
 
 
-def register_SE(input: ImageLike, to: ImageLike, pmap: Any = None, log_to_console=False):
+def register(input: ImageLike, to: ImageLike, pmap: Any = None, log_to_console=False):
     """Register ``input`` to ``reference``. Returns ``input`` with the same shape and spatial position as ``reference``
 
     Registering means finding a transform which alligns ``input`` to match with ``reference``,
@@ -131,7 +131,7 @@ def register_SE(input: ImageLike, to: ImageLike, pmap: Any = None, log_to_consol
     return reg.find_transform(input=input, to=to)
 
 
-def register_D_SE(
+def register_D(
     images: Mapping[str, ImageLike],
     key: str,
     to: ImageLike,
@@ -155,7 +155,7 @@ def register_D_SE(
 
     return registered
 
-def register_each_SE(
+def register_each(
     images: Mapping[str, ImageLike],
     key: str,
     to: ImageLike,
@@ -169,11 +169,11 @@ def register_each_SE(
     to = tositk(to)
 
     input = images[key]
-    input_reg = register_SE(input=input, to=to, pmap=pmap, log_to_console=log_to_console)
+    input_reg = register(input=input, to=to, pmap=pmap, log_to_console=log_to_console)
 
     registered = {key: input_reg}
     for k,v in images.items():
         if k != key:
-            registered[k] = register_SE(input=v, to=input_reg, pmap=pmap, log_to_console=log_to_console)
+            registered[k] = register(input=v, to=input_reg, pmap=pmap, log_to_console=log_to_console)
 
     return registered
