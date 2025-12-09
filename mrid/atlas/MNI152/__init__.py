@@ -62,6 +62,13 @@ def get_mni152(
 ):
     """Returns path to .nii.gz file of specified MNI-152 template.
 
+    The following templates are available:
+    - ``"2006 T1w symmetric"``
+    - ``"2009a T1w symmetric"``
+    - ``"2009a T2w symmetric"``
+    - ``"2009a T1w asymmetric"``
+    - ``"2009a T2w asymmetric"``
+
     Descriptions of templates are available here https://zenodo.org/records/15470657
     """
     filename = f"{type} {bool(skullstripped)}.nii.gz"

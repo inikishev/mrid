@@ -137,7 +137,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         return self.cast(sitk.sitkFloat32)
 
     def normalize(self) -> "Study":
-        """Return a new study where all scans are separately z-normalized to 0 mean and 1 variance.
+        """Returns a new study where all scans are separately z-normalized to 0 mean and 1 variance.
 
         Note:
             This operation does not affect segmentations.
@@ -145,7 +145,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         return self.apply(sitk.Normalize, seg_fn=None)
 
     def rescale_intensity(self, min: float, max: float) -> "Study":
-        """Return a new study where all scans are separately rescaled to the specified intensity range.
+        """Returns a new study where all scans are separately rescaled to the specified intensity range.
 
         Args:
             min: Minimum value for the output intensity range.
@@ -154,7 +154,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         return self.apply(partial(sitk.RescaleIntensity, outputMinimum = min, outputMaximum = max), seg_fn=None) # type:ignore
 
     def crop_bg(self, key: str) -> "Study":
-        """Return a new study with cropped black background. Finds the foreground bounding box of ``study[key]``,
+        """Returns a new study with cropped black background. Finds the foreground bounding box of ``study[key]``,
         and uses that bounding box to crop all other images, including segmentations.
 
         Args:
@@ -171,12 +171,15 @@ class Study(UserDict[str, sitk.Image | Any]):
         disable_tta: bool = False,
         verbose: bool = False,
 
+        expand: int = 0,
+
         include_mask: bool = False,
         keep_original: bool = False,
 
-        expand: int = 0,
     ) -> "Study":
-        """Predicts brain mask of ``study[key]`` via HD-BET,
+        """Returns a new study with all scans skullstripped.
+
+        This predicts brain mask of ``study[key]`` via HD-BET,
         then uses this mask to skullstrip all scans. Doesn't affect segmentations.
 
         Args:
@@ -193,15 +196,15 @@ class Study(UserDict[str, sitk.Image | Any]):
                 Set this flag to disable test time augmentation. This will make prediction faster
                 at a slight decrease in prediction quality. Recommended for device cpu. Defaults to False.
             verbose (bool, optional): Talk to me. Defaults to False.
+            expand (int, optional):
+                Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+                Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
             include_mask (bool, optional):
                 if True, adds ``"seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
                 This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
             keep_original (bool, Optional):
                 if True, skull-stripped images are added to the returned study with ``"_hd_bet"`` postfix,
                 and do not replace original images.
-            expand (int, optional):
-                Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
-                Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
         """
         d = preprocessing.hd_bet.skullstrip_D(
             images=self.get_scans(),
@@ -216,8 +219,52 @@ class Study(UserDict[str, sitk.Image | Any]):
         )
         return Study(**d, **self.get_segmentations(), **self.get_info())
 
+    def skullstrip_synthstrip(
+        self,
+        synthstrip_script_path: str | os.PathLike,
+        key: str,
+        gpu: bool | None = None,
+        border: int | None = None,
+        threads: int | None = None,
+        model: str | os.PathLike | None = None,
+        expand: int = 0,
+
+        include_mask: bool = False,
+        keep_original: bool = False,
+    ):
+        """Returns a new study with all scans skullstripped.
+
+        This predicts brain mask of ``study[key]`` via synthstrip,
+        then uses this mask to skullstrip all scans. Doesn't affect segmentations.
+
+        Args:
+            synthstrip_script_path (str | os.PathLike): path to synthstrip script.
+            key (str): key of the image to pass to HD-BET for brain mask prediction.
+            gpu (bool | None, optional): use the GPU, defaults to False if unset.
+            border (int | None, optional): mask border threshold in mm, defaults to 1 if unset.
+            threads (int | None, optional): PyTorch CPU threads, PyTorch default if unset.
+            model (str | os.PathLike | None, optional): alternative model weights
+            expand (int, optional):
+                Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
+                Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
+            include_mask (bool, optional):
+                if True, adds ``"seg_synthstrip"`` with brain mask predicted by HD-BET to returned dictionary.
+                This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
+            keep_original (bool, Optional):
+                if True, skull-stripped images are added to the dictionary
+                with ``"_synthstrip" ``postfix, rather than replacing.
+        """
+        d = preprocessing.synthstrip.skullstrip_D(
+            synthstrip_script_path=synthstrip_script_path,
+            images=self.get_scans(),
+            key=key,
+            gpu=gpu, border=border, threads=threads, model=model,
+            expand=expand, include_mask=include_mask, keep_original=keep_original,
+        )
+        return Study(**d, **self.get_segmentations(), **self.get_info())
+
     def resize(self, size: Sequence[int], interpolator=sitk.sitkLinear):
-        """Resize all images to ``size``.
+        """Returns a new study with all images resized to to ``size``.
 
         Args:
             size: Target size as a sequence of integers (e.g., [height, width, depth]).
@@ -229,9 +276,9 @@ class Study(UserDict[str, sitk.Image | Any]):
         )
 
     def downsample(self, factor: float, dims = None, interpolator=sitk.sitkLinear):
-        """Downsample all images along ``dims``.
+        """Returns a new study with all images downsampled by ``factor`` along ``dims``.
         For example, ``factor=2`` for 2x downsampling.
-        Set dims to ``None`` for all dims.
+        Set ``dims`` to ``None`` to downsample along all dimensions.
 
         Args:
             factor: Downsampling factor (e.g., 2 for 2x downsampling).
@@ -244,7 +291,8 @@ class Study(UserDict[str, sitk.Image | Any]):
         )
 
     def register_SE(self, key: str, to: ImageLike, pmap=None, log_to_console=False) -> "Study":
-        """Returns a new Study, registers ``study[key]`` to ``to`` via SimpleElastix,
+        """Returns a new Study.
+        Registers ``study[key]`` to ``to`` via SimpleElastix,
         and use transformation parameters to register all other images including segmentation.
         This assumes that all images are aligned, if they are not, use ``register_many`` method.
 
@@ -264,7 +312,8 @@ class Study(UserDict[str, sitk.Image | Any]):
         return Study(**d, **self.get_info())
 
     def register_each_SE(self, key: str, to: "ImageLike | None" = None, pmap=None, log_to_console=False) -> "Study":
-        """Returns a new study. Registers all other images to ``study[key]``.
+        """Returns a new study.
+        Registers all other images to ``study[key]``.
         If ``to`` is specified, register ``study[key]`` to ``to`` beforehand.
         Uses SimpleElastix.
 
@@ -293,7 +342,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         return Study(**d, **self.get_info())
 
     def resample_to(self, to: "np.ndarray | sitk.Image | torch.Tensor | str", interpolation=sitk.sitkLinear) -> "Study":
-        """Returns a new study, resamples all images including segmentation to `to`.
+        """Returns a new study with all images including segmentation resampled to ``to``.
         Segmentation always uses nearest interpolation"""
         to = tositk(to)
 
@@ -477,8 +526,8 @@ class Study(UserDict[str, sitk.Image | Any]):
         return {k: (torch.from_numpy(v) if isinstance(v, np.ndarray) else v) for k,v in self.numpy_dict()}
 
     def plot(self):
-        from .utils.plotting import visualize_3d_arrays
-        visualize_3d_arrays(self.get_images().numpy_dict())
+        from .utils.plotting import plot_study
+        plot_study(self.get_images().numpy_dict())
 
     def save(
         self,

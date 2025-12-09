@@ -103,7 +103,7 @@ def predict_brain_mask(
     # ---------------------------- register to mni152 ---------------------------- #
     if register_to_mni152 is not None:
         from ..atlas.MNI152 import get_mni152
-        mni152 = get_mni152(f"2009a {register_to_mni152}w symmetric", skullstripped=False) # type:ignore
+        mni152 = get_mni152(f"2009a {register_to_mni152}w asymmetric", skullstripped=False) # type:ignore
         input_mni = register(input, mni152)
 
     else:

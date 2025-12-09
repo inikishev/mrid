@@ -158,18 +158,23 @@ def register_D(
 def register_each(
     images: Mapping[str, ImageLike],
     key: str,
-    to: ImageLike,
+    to: "ImageLike | None",
     pmap: Any = None,
     log_to_console=False,
 ) -> dict[str, sitk.Image]:
-    """Register ``images[key]`` to ``reference``, then register all other values in ``images`` to registered ``images[key]``.
+    """Registers all other images to ``images[key]``.
+    If ``to`` is specified, register ``images[key]`` to ``to`` beforehand.
+    Uses SimpleElastix.
 
     Use this when you have multiple modalities that do not align."""
     images = {k: tositk(v) for k,v in images.items()}
-    to = tositk(to)
 
     input = images[key]
-    input_reg = register(input=input, to=to, pmap=pmap, log_to_console=log_to_console)
+    if to is not None:
+        to = tositk(to)
+        input_reg = register(input=input, to=to, pmap=pmap, log_to_console=log_to_console)
+    else:
+        input_reg = input
 
     registered = {key: input_reg}
     for k,v in images.items():

@@ -206,6 +206,7 @@ def skullstrip_D(
     """Predicts brain mask of ``images[key]`` using synthstrip, then uses this mask to skull strip all values in ``images``.
 
     Args:
+        synthstrip_script_path (str | os.PathLike): path to synthstrip script.
         images (Mapping[str, ImageLike]): dictionary of images that align with each other.
         key (str): key of the image to pass to HD-BET for brain mask prediction.
         gpu (bool | None, optional): use the GPU, defaults to False if unset.

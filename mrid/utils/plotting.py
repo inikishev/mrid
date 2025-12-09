@@ -3,8 +3,10 @@ from collections.abc import Mapping
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 import numpy as np
+from ..loading import ImageLike, tonumpy
 
-def visualize_3d_arrays(data: Mapping[str, np.ndarray]):
+def plot_study(data: Mapping[str, ImageLike]):
+    data = {k: tonumpy(v) for k,v in data}
     n_vals = len(data)
 
     # 1. Determine layout for the Outer Grid (Modalities)
@@ -94,7 +96,7 @@ if __name__ == "__main__":
 
         return mask
 
-    visualize_3d_arrays({
+    plot_study({
         "T1 Weighted (Sphere)": dummy_data((60, 60, 60), 'sphere'),
         "T2 Weighted (Cube)": dummy_data((60, 60, 60), 'cube'),
         "Proton Density (Noise)": dummy_data((60, 60, 60), 'noise'),
