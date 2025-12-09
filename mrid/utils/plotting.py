@@ -6,7 +6,7 @@ import numpy as np
 from ..loading import ImageLike, tonumpy
 
 def plot_study(data: Mapping[str, ImageLike]):
-    data = {k: tonumpy(v) for k,v in data}
+    data = {k: tonumpy(v) for k,v in data.items()}
     n_vals = len(data)
 
     # 1. Determine layout for the Outer Grid (Modalities)
@@ -74,7 +74,7 @@ def plot_study(data: Mapping[str, ImageLike]):
         # Add the main Modality Name on top of the grid block
         # We fetch the geometric center of the top row of the inner grid
         box = outer_grid[i].get_position(fig)
-        fig.text(box.x0 + box.width/2, box.y1 + 0.02, modality_name,
+        fig.text(box.x0 + box.width/2, box.y1 + 0.04, modality_name,
                  ha='center', va='bottom', fontsize=14, fontweight='bold')
 
     plt.show()

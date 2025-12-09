@@ -1,6 +1,7 @@
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
+import os
 import numpy as np
 import SimpleITK as sitk
 
@@ -51,6 +52,7 @@ class SimpleElastix:
         """
         if self._transformed is not None:
             raise RuntimeError("`find_transform` has already been called on this Registration object.")
+
         self._moving = tositk(input)
         to = tositk(to)
 
@@ -76,6 +78,9 @@ class SimpleElastix:
         """
         if self._transformed is None:
             raise RuntimeError("First find transform parameters using `find_transform` method.")
+
+        input = tositk(input)
+        input.CopyInformation(self._moving)
 
         transform = sitk.TransformixImageFilter()
         tmap = self.elastix.GetTransformParameterMap()
@@ -158,7 +163,7 @@ def register_D(
 def register_each(
     images: Mapping[str, ImageLike],
     key: str,
-    to: "ImageLike | None",
+    to: "ImageLike | None" = None,
     pmap: Any = None,
     log_to_console=False,
 ) -> dict[str, sitk.Image]:

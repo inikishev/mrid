@@ -1,139 +1,51 @@
 <h1 align='center'>mrid</h1>
 
-mrid is a library for preprocessing of 3D images, particularly medical images, it also includes some utilities for training models.
+mrid is a library for preprocessing of 3D images, particularly medical images.
 
-`mrid.Study` provides a convenient way to work with scans and provides all the tools (skull-stripping, registration, etc). See [this notebook](https://nbviewer.org/github/inikishev/mrid/blob/main/mrid_tutorial.ipynb) for an example of how to use it ([Google Colab](https://colab.research.google.com/drive/1d1MWPaGAqfK6q_5879LpwwxPCB-tbExe?usp=sharing)).
+It provide interfaces for many medical image processing tools such as [SimpleElastix](https://simpleelastix.github.io/), [HD-BET](https://github.com/MIC-DKFZ/HD-BET#Installation), [SynthStrip](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/), [CTSeg](https://github.com/WCHN/CTseg). Note that those libraries are not bundled with mrid, I've included installation instructions in all notebooks.
 
-All methods are also available as separate functions, see below.
+### Installation
 
-## Registering a scan
-
-All methods accept scans that can be a path to NIfTI, DICOM dir, sitk Image, numpy array or torch tensor, and return sitk.Image format.
-
-For registering you need to have SimpleITK-SimpleElastix installed (<https://pypi.org/project/SimpleITK-SimpleElastix/>)
-
-```python
-registered = mrid.register(moving, fixed) # returns sitk.Image
-```
-
-mrid includes downloaders for commonly used templates - MNI152 and SRI24: `mrid.get_mni152`, and `mrid.get_sri24`.
-
-```python
-t1_sri = mrid.register(t1, mrid.get_sri24("T1")) # returns sitk.Image
-```
-
-note you can always convert anything to numpy array using `mrid.tonumpy(src)`:
-
-```python
-t1_sri_np = mrid.tonumpy(t1_sri) # np.array
-```
-
-## Registering multiple scans
-
-If you have multiple scans that are already aligned, you can register one of them and use the same transformation to transform the rest. This can also be used to register segmentations.
-
-In this example we register T1 to SRI24 T1 template, and transform the rest
-
-```python
-data = {"t1": "t1c.nii.gz", "t2": "t2w.nii.gz", "flair": "t2f.nii.gz"}
-registered_data = mrid.register_D(data, key="t1", to=mrid.get_sri24("T1"))
-# dict of sitk.Image registered to SRI24
-```
-
-If you have multiple scans that are not aligned (e.g. have different shapes, orientations), you can use `register_each`. This registers one scan to the target, and then registers all other scans to the first scan. In the example it registers T1 to SRI24, and then registers T2 and FLAIR to T1.
-
-```python
-data = {"t1": "t1c.nii.gz", "t2": "t2w.nii.gz", "flair": "t2f.nii.gz"}
-registered_data = mrid.register_each(data, key="t1", to=mrid.get_sri24("T1"))
-# dict of sitk.Image registered to SRI24
-```
-
-## Inverse transform
-
-mrid provides a simple way to compute an inverse of registration, this is also another way to perform registration in general.
-
-```python
-reg = mrid.Registration()
-
-# first we need to fit a transform
-reg.find_transform(t1, mrid.get_sri24("T1"))
-
-# now we can use `reg.apply_transform` to transform any scan (assuming it is aligned to `t1`)
-t2_sri24 = reg.apply_transform(t2) # returns sitk.Image
-
-# use `apply_inverse_transform` to transform back to original space
-t2_recovered = reg.apply_inverse_transform(t2_sri24) # returns sitk.Image
-
-# when transforming segmentations, use nearest
-# neigbour interpolation to preserve edges
-seg = (mrid.tonumpy(t2_sri24) > 100).astype(np.uint8)
-seg_orig = reg.apply_inverse_transform(seg, use_nearest_interpolation=True) # returns sitk.Image
-```
-
-## Skullstripping MRI
-
-For skullstripping MRIs mrid uses HD-BET model (<https://github.com/MIC-DKFZ/HD-BET>), and you need to have it installed (it uses torch). It works with pre/post contrast T1, T2 and FLAIR MRIs, but it expects them to be in MNI152 space (while many new datasets like BraTS are in SRI24). If your scans aren't in MNI152, the `skullstrip` function can register specified scan to MNI152, pass it to HD-BET, and then register back to original space, if `register_to_mni152` argument is specified.
-
-```python
-t1_skullstripped = mrid.skullstrip_mri(t1) # if t1 is in MNI152
-t1_skullstripped = mrid.skullstrip_mri(t1, register_to_mni152="T1") # if t1 is not in MNI152
-```
-
-HD-BET is generally very robust but it can remove parts of tumors adjascent to the skull, but this is true for all skullstripping tools.
-
-## Skullstripping multiple scans
-
-If you have multiple scans that are already aligned, you can compute brain mask on one of them (ideally post-contrast T1) and apply it to all scans.
-
-```python
-data = {"t1": "t1c.nii.gz", "t2": "t2w.nii.gz", "flair": "t2f.nii.gz"}
-skullstripped_data = mrid.skullstrip_D_mri(data, key="t1", to=mrid.get_sri24("T1"))
-# dict of skullstripped sitk.Image
-```
-
-## CTseg
-
-mrid provides a wrapper for [CTseg](https://github.com/WCHN/CTseg) docker container. This can skull-strip CT scans and segment multiple regions.
-
-CTseg docker installation is outlined in https://github.com/WCHN/CTseg in "Docker" section, don't worry, it's easy to install via a single command.
-
-After it is done, the CTseg functions from mrid can be used.
-
-```python
-# direct wrapper for CTseg, will save all outputs of CTseg to the same directory as CT.nii
-mrid.utils.run_CTseg("path/to/CT.nii")
-```
-
-## dcm2niix
-
-mrid provides a simple wrapper around [dcm2niix](https://github.com/rordenlab/dcm2niix), which is a very robust tool for converting DICOMs to NIfTI.
-
-```python
-# this saves output.nii.gz to output_path. It can save multiple files if there are multiple cases in "path/to/dicoms".
-mrid.utils.run_dcm2niix("path/to/dicoms", outfolder="output_path", outfname="output")
-```
-
-If you want to use it convert DICOMs directly to SimpleITK, use `dcm2sitk`:
-
-```python
-t1 = mrid.utils.dcm2sitk("path/to/dicoms") # returns sitk.Image with correct spatial information
-```
-dcm2niix is much slower compared to SimpleITK's series reader which mrid uses by default, but it's more careful about splitting different studies to different files, although it might fail with malformed DICOMs which are surprisingly common (where it would think each slice is a separate study).
-
-## Loading STL segmentations
-
-`stl2sitk` converts segmentations in STL format to `sitk.Image` given a reference `sitk.Image` that the STL should be aligned to. Basically something I encountered so I had to make this.
-
-```python
-seg = mrid.utils.stl2sitk("path/to/file.stl", reference) # returns sitk.Image (hopefully) aligned with `reference`
-```
-
-## How to install
 Either run
+
 ```
 pip install mrid-python
 ```
+
 or
+
 ```
 pip install git+https://github.com/inikishev/mrid
 ```
+
+### Basics
+
+The images you pass to all functions in mrid can be path to a .nii.gz file, DICOM directory, sitk.Image, numpy array or torch tensor. All functions return results as `sitk.Image`. If you need a numpy array, you can use `mrid.tonumpy(sitk_image)`.
+
+### Registering images with SimpleITK-SimpleElastix
+
+[SimpleElastix](https://simpleelastix.github.io/) is a robust tool for image registration which works really well out-of-the-box. It works on both Windows and Linux.
+
+IMAGE AND NOTEBOOK！！！！！
+
+### Skullstripping MRI scans with HD-BET
+
+[HD-BET](https://github.com/MIC-DKFZ/HD-BET) is a model that performs skullstripping of pre- and post-constrast T1, T2 and FALIR MRIs. It works on both Windows and Linux.
+
+IMAGE AND NOTEBOOK！！！！！
+
+### Skullstripping with SynthStrip
+[SynthStrip](https://surfer.nmr.mgh.harvard.edu/docs/synthstrip/) is a skull-stripping tool that works with many different image types and modalities, including MRI, DWI, CT, PET, etc.
+
+IMAGE AND NOTEBOOK！！！！！
+
+
+### Skullstripping and segmentation of CT images with CTseg
+
+TODO
+
+### Example workflow - preprocessing MRIs to BraTS format
+
+Many [BraTS](https://www.synapse.org/brats) datasets are provided as skullstripped images in SRI24 space. See this notebook for how to process raw scans to this format, and then process segmentations back to original format.
+
+IMAGE AND NOTEBOOK！！！！！

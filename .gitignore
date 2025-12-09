@@ -2,6 +2,7 @@
 *.nii
 *.zip
 notebooks/data
+TransformParameters.*.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
