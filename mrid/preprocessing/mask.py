@@ -1,6 +1,5 @@
 import SimpleITK as sitk
 import numpy as np
-import SimpleITK as sitk
 
 from ..loading.convert import ImageLike, tositk, tonumpy
 
@@ -15,12 +14,12 @@ def expand_binary_mask(binary_mask: ImageLike, expand: int) -> sitk.Image:
             Negative values dilate the mask by this many pixels.
     """
     binary_mask = tositk(binary_mask)
-    if expand > 0:
-        inverted_mask = 1 - binary_mask
-        return 1 - sitk.BinaryDilate(inverted_mask, (expand, expand, expand))
-
     if expand < 0:
-        return sitk.BinaryDilate(binary_mask, (-expand, -expand, -expand))
+        inverted_mask = 1 - binary_mask
+        return 1 - sitk.BinaryDilate(inverted_mask, (-expand, -expand, -expand))
+
+    if expand > 0:
+        return sitk.BinaryDilate(binary_mask, (expand, expand, expand))
 
     return binary_mask
 
