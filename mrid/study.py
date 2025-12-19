@@ -79,6 +79,14 @@ class Study(UserDict[str, sitk.Image | Any]):
         study[key] = item
         return study
 
+    def remove(self, keys: str | Sequence[str]):
+        """Returns a new study without specified keys"""
+        study = self.copy()
+        if isinstance(keys, str): keys = (keys, )
+        for k in keys:
+            del study[k]
+        return study
+
     def get_scans(self):
         """Returns a new ``Study`` with segmentations and info removed."""
         return self.__class__({k:v for k,v in self.items() if not k.startswith(("seg", "info"))})
