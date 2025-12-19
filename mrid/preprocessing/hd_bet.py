@@ -235,7 +235,7 @@ def skullstrip_D(
 
     # optionally add with skullstripped postfix
     if keep_original:
-        skullstripped = {f"{k}_hd_bet": v for k,v in skullstripped}
+        skullstripped = {f"{k}_hd_bet": v for k,v in skullstripped.items()}
         skullstripped.update(images.copy())
 
     return skullstripped

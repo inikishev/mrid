@@ -460,7 +460,6 @@ class Study(UserDict[str, sitk.Image | Any]):
         arr = tfm(self.numpy(key))
         return self.add(f'{key}{postfix}', arr, reference_key=key)
 
-
     def numpy(self, key: str):
         """returns ``study[key]`` converted to a numpy array."""
         return tonumpy(self[key])
