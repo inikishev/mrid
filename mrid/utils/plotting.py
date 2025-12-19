@@ -78,7 +78,8 @@ def plot_study(data: Mapping[str, ImageLike]):
         fig.text(box.x0 + box.width/2, box.y1 + 0.04, modality_name,
                  ha='center', va='bottom', fontsize=14, fontweight='bold')
 
-    plt.show()
+    # plt.show()
+    return fig
 
 if __name__ == "__main__":
 

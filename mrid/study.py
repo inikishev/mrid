@@ -79,12 +79,17 @@ class Study(UserDict[str, sitk.Image | Any]):
         study[key] = item
         return study
 
-    def remove(self, keys: str | Sequence[str]):
+    def remove(self, *keys: str | Sequence[str]):
         """Returns a new study without specified keys"""
-        study = self.copy()
-        if isinstance(keys, str): keys = (keys, )
+        keys_proc = []
         for k in keys:
+            if isinstance(k, str): keys_proc.append(k)
+            else: keys_proc.extend(k)
+
+        study = self.copy()
+        for k in keys_proc:
             del study[k]
+
         return study
 
     def get_scans(self):
@@ -166,7 +171,7 @@ class Study(UserDict[str, sitk.Image | Any]):
         and uses that bounding box to crop all other images, including segmentations.
 
         Args:
-            key: The key of the image to use for finding the foreground bounding box.
+            key: The key of the image (scan or segmentation) to use for finding the foreground bounding box.
         """
         d = preprocessing.cropping.crop_bg_D(self.get_images(), key)
         return Study(**d, **self.get_info())
@@ -534,7 +539,7 @@ class Study(UserDict[str, sitk.Image | Any]):
 
     def plot(self):
         from .utils.plotting import plot_study
-        plot_study(self.get_images().numpy_dict())
+        return plot_study(self.get_images().numpy_dict())
 
     def save(
         self,

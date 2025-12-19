@@ -73,8 +73,9 @@ def resize(img: ImageLike, new_size: Sequence[int], interpolator=sitk.sitkLinear
 
     return sitk.Resample(img, reference_image, centered_transform, interpolator, 0.0)
 
-def downsample(image:ImageLike, factor:float, dims: Sequence[int] | None, interpolator=sitk.sitkLinear) -> sitk.Image:
+def downsample(image:ImageLike, factor:float, dims: int | Sequence[int] | None, interpolator=sitk.sitkLinear) -> sitk.Image:
     """factor = 2 for 2x downsampling"""
+    if isinstance(dims, int): dims = (dims, )
     image = tositk(image)
     size = sitk.GetArrayFromImage(image).shape
     size = [round(s/factor) if (dims is None or i in dims) else s for i,s in enumerate(size)]
