@@ -74,6 +74,16 @@ def stl2sitk(
     reference: str | os.PathLike | sitk.Image,
     fix_holes: bool = False,
 ):
+    """
+    Loads an STL file under ``stl_path`` and converts it to ``sitk.Image`` aligned with ``reference``.
+    Note that this might take a few minutes.
+
+    Args:
+        stl_path (str): Path to the STL segmentation file. The STL coordinates
+                        MUST be in the same coordinate system as the ``reference``.
+        reference (str | os.PathLike | sitk.Image): path to a directory of DICOM files or a NIfTI file, or a ``sitk.Image``.
+        fix_holes (bool, optional): whether to try to fix holes in STL if they are detected (this can be very slow).
+    """
     import trimesh
 
     # ------------------------------ load reference ------------------------------ #
