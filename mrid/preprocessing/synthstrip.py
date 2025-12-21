@@ -70,6 +70,7 @@ def run_synthstrip(
     fill: int | None = None,
     no_csf: bool | None = None,
     model: str | os.PathLike | None = None,
+    verbose: bool = True,
 ):
     """Runs ``synthstrip`` command-line routine via ``subprocess.run``.
 
@@ -108,7 +109,10 @@ def run_synthstrip(
     if model is not None: command.extend(["--model", os.path.normpath(model)])
 
     # run
-    subprocess.run(command, check=True)
+    if verbose:
+        subprocess.run(command, check=True)
+    else:
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
 
 def predict_brain_mask(
     synthstrip_script_path: str | os.PathLike,
@@ -117,6 +121,7 @@ def predict_brain_mask(
     border: int | None = None,
     threads: int | None = None,
     model: str | os.PathLike | None = None,
+    verbose: bool = True,
 ):
     """Returns brain mask of ``input`` predicted by ``synthstrip``.
 
@@ -141,6 +146,7 @@ def predict_brain_mask(
             border=border,
             threads=threads,
             model=model,
+            verbose=verbose,
         )
 
         brain_mask = tositk(os.path.join(tmpdir, "synthstrip_mask.nii.gz"))
@@ -155,6 +161,7 @@ def skullstrip(
     threads: int | None = None,
     model: str | os.PathLike | None = None,
     expand: int = 0,
+    verbose: bool = True,
 ):
     """Skullstrips ``input`` using synthstrip.
 
@@ -181,6 +188,7 @@ def skullstrip(
         border=border,
         threads=threads,
         model=model,
+        verbose=verbose
     )
     if expand != 0:
         mask = expand_binary_mask(mask, expand=expand)
@@ -201,6 +209,8 @@ def skullstrip_D(
 
     include_mask: bool = False,
     keep_original: bool = False,
+
+    verbose: bool = True,
 
 ) -> dict[str, sitk.Image]:
     """Predicts brain mask of ``images[key]`` using synthstrip, then uses this mask to skull strip all values in ``images``.
@@ -233,6 +243,7 @@ def skullstrip_D(
         border=border,
         threads=threads,
         model=model,
+        verbose=verbose,
     )
     skullstripped = {}
 

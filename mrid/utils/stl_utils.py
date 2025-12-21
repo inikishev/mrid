@@ -41,7 +41,7 @@ def stl2sitk(
         if fix_holes:
             mesh.fill_holes()
             if not mesh.is_watertight:
-                print("Warning: Failed to make mesh watertight after filling holes.")
+                warnings.warn("Warning: Failed to make mesh watertight after filling holes.")
 
     # ------------------------------- voxelize STL ------------------------------- #
     x_coords = origin[0] + np.arange(shape_xyz[0]) * spacing[0]

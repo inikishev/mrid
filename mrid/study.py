@@ -244,6 +244,8 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         include_mask: bool = False,
         keep_original: bool = False,
+
+        verbose: bool = True,
     ):
         """Returns a new study with all scans skullstripped.
 
@@ -273,6 +275,7 @@ class Study(UserDict[str, sitk.Image | Any]):
             key=key,
             gpu=gpu, border=border, threads=threads, model=model,
             expand=expand, include_mask=include_mask, keep_original=keep_original,
+            verbose=verbose,
         )
         return Study(**d, **self.get_segmentations(), **self.get_info())
 
