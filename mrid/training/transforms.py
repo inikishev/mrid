@@ -9,29 +9,41 @@ ARR = TypeVar("ARR", bound=Any)
 def crop(
     arr: ARR,
     reduction: Sequence[int],
-    where: Literal["start", "end", "center"] = "center",
+    where: Literal["start", "end", "center", "random"] = "center",
 ) -> ARR:
-    """Crop ``input`` such that ``output.shape[i] = input.shape[i] - reduction[i]``"""
+    """Crop ``arr`` such that ``output.shape[i] = input.shape[i] - reduction[i]``"""
 
-    # create slices
-    if where == 'center':
-        slices = [(int(i / 2), -int(i / 2)) if i % 2 == 0 else (int(i / 2), -int(i / 2) - 1) for i in reduction]
+    shape = arr.shape[-len(reduction):]
+    slices = []
 
-    elif where == 'start':
-        slices = [(None, -i) for i in reduction]
+    for r, sh in zip(reduction, shape):
+        if r == 0:
+            slices.append(slice(None))
+            continue
 
-    elif where == 'end':
-        slices = [(i, None) for i in reduction]
+        if r < 0: raise ValueError("Reduction cannot be negative")
+        if r > sh: raise ValueError(f"Reduction {r} exceeds dimension size {sh}")
 
-    slices = [slice(i if i!=0 else None, j if j != 0 else None) for i, j in slices]
+        if where == 'start': start, end = 0, sh - r
+        elif where == 'end': start, end = r, sh
+        elif where == 'center':
+            start = r // 2
+            end = start + (sh - r)
+        elif where == 'random':
+            start = random.randint(0, r)
+            end = start + (sh - r)
+        else:
+            raise ValueError(f"Invalid where: {where}")
 
-    # crop with broadcasting
+        slices.append(slice(start, end))
+
+    # apply with broadcasting
     return arr[(..., *slices)]
 
 def crop_to_shape(
     input: ARR,
     shape: Sequence[int],
-    where: Literal["start", "end", "center"] = "center",
+    where: Literal["start", "end", "center", "random"] = "center",
 ) -> ARR:
     """Crop ``input`` to ``shape``."""
 
@@ -40,7 +52,6 @@ def crop_to_shape(
         shape = list(input.shape[:input.ndim - len(shape)]) + list(shape)
 
     return crop(input, [i - j for i, j in zip(input.shape, shape)], where=where)
-
 
 
 def shuffle_channels(x:torch.Tensor):

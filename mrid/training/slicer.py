@@ -1,10 +1,11 @@
+import os
 import random
 from functools import partial
 from typing import Any, Literal, cast
 from collections.abc import Callable, Sequence
 import torch
 
-from ..loading import ImageLike, totensor
+from ..loading import ImageLike, totensor, tonumpy
 
 
 class SliceSampler:
@@ -216,12 +217,15 @@ class SliceDataset(torch.utils.data.Dataset):
         randflip: bool = True,
         flatten: bool = True,
         repeat: int = 1,
+        tfm: Callable[[torch.Tensor, torch.Tensor], Any] | None = None,
     ):
         super().__init__()
         self._callables = [s.random_weighted_callable(
             around=around, seg_prob=seg_prob, randflip=randflip, flatten=flatten) for s in samplers]
 
         self._repeat = repeat
+
+        self.tfm = tfm
 
     def __len__(self):
         return len(self._callables) * self._repeat
@@ -232,4 +236,9 @@ class SliceDataset(torch.utils.data.Dataset):
         if i >= length:
             raise IndexError(f"Index {i} is larger than length of SliceDataset {length}")
 
-        return self._callables[i % len(self._callables)]()
+        img, seg = self._callables[i % len(self._callables)]()
+
+        if self.tfm is not None:
+            return self.tfm(img, seg)
+
+        return img, seg
