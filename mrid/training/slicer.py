@@ -43,7 +43,7 @@ class SliceSampler:
             raise RuntimeError(f"Segmentation must have a shape of of (D, H, W), got {segmentation.shape}")
         if segmentation.is_floating_point():
             raise RuntimeError(f"Segmentation must have integer data type, got {segmentation.dtype}")
-        if segmentation.shape[1:] != data.shape:
+        if data.shape[1:] != segmentation.shape:
             raise RuntimeError(f"Shapes of scans and segmentation do not match: {data.shape = }, {segmentation.shape = }")
         if segmentation.min() < 0:
             raise RuntimeError(f"Segmentation background must have a value of 0, got {segmentation.min() = }")
@@ -192,6 +192,11 @@ class SliceSampler:
             return self.get_random_empty_slice(around=around, randflip=randflip, flatten=flatten)
 
         return get_sample
+
+    def get_all_dim_slices(self, dim: Literal[0,1,2], around: int, flatten: bool = True):
+        return [self.get_slice(
+            dim=dim, coord=coord, around=around, flatten=flatten
+        ) for coord in range(around, self.data.shape[dim+1] - around)]
 
 
 class SliceDataset(torch.utils.data.Dataset):

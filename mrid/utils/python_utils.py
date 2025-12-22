@@ -1,7 +1,7 @@
 import importlib.util
-from collections.abc import Mapping, Sequence
-from typing import Any
-
+from collections.abc import Mapping, Sequence, Iterable
+from typing import Any, TypeVar
+import functools, operator
 
 # lazy loader from https://stackoverflow.com/a/78312674/15673832
 class LazyLoader:
@@ -46,3 +46,8 @@ class LazyLoader:
 #     if isinstance(struct, Mapping):
 #         return list(struct.values()), _Packer(type(struct), list(struct.values()))
 #     raise TypeError(f"Transformation functions accept lists and dictionaries, but received {type(struct)}")
+
+T = TypeVar("T")
+def reduce_dim(x:Iterable[Iterable[T]]) -> list[T]:
+    """Reduces one level of nesting. Takes an iterable of iterables of X, and returns an iterable of X."""
+    return functools.reduce(operator.iconcat, x, [])
