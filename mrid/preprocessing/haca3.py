@@ -80,9 +80,13 @@ GPU memory. For reduced GPU memory consumption, source images maybe divided into
         in_path = [in_path]
 
     if target_theta is not None:
-        assert isinstance(target_theta, tuple)
-        assert len(target_theta) == 2
-        assert all(isinstance(t, (int,float)) for t in target_theta)
+        if not isinstance(target_theta, tuple):
+            raise RuntimeError(f"target_theta must be tuple of two float values or None, got {type(target_theta)}")
+        if not len(target_theta) == 2:
+            raise RuntimeError(f"target_theta must be a length 2 tuple, got length {len(target_theta)}")
+        if not all(isinstance(t, (int,float)) for t in target_theta):
+            raise RuntimeError(
+                f"target_theta must be tuple of two float values, got tuple({tuple(type(v) for v in target_theta)})")
 
     for f in in_path:
         haca3_command.append(f'--in-path "{os.path.normpath(f)}"',)
