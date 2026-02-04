@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from typing import Any
 import SimpleITK as sitk
 
@@ -34,3 +34,39 @@ def crop_bg_D(images: Mapping[str, ImageLike], key: str) -> dict[str, sitk.Image
     ret = {k: sitk.RegionOfInterest(v, bbox[int(len(bbox) / 2) :],  bbox[0 : int(len(bbox) / 2)]) for k,v in images.items()}
     return ret
 
+def center_crop_or_pad(image, size: Sequence[int]) -> "sitk.Image":#[192, 224, 192]
+    image = tositk(image)
+    current_size = list(image.GetSize())
+
+    low_pad = []
+    high_pad = []
+    low_crop = []
+    high_crop = []
+
+    for cur, tar in zip(current_size, size):
+        diff = tar - cur
+        if diff >= 0:
+            low = diff // 2
+            high = diff - low
+            low_pad.append(low)
+            high_pad.append(high)
+            low_crop.append(0)
+            high_crop.append(0)
+        else:
+            diff = abs(diff)
+            low = diff // 2
+            high = diff - low
+            low_pad.append(0)
+            high_pad.append(0)
+            low_crop.append(low)
+            high_crop.append(high)
+
+    image = sitk.ConstantPad(image, low_pad, high_pad, 0)
+    image = sitk.Crop(image, low_crop, high_crop)
+
+    # Verify size
+    if list(image.GetSize()) == size:
+        return image
+
+    raise RuntimeError(
+        f"Error: Final size is {image.GetSize()}, instead of {size} (basically crop_or_pad failed for some reason)")

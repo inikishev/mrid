@@ -14,6 +14,7 @@ import SimpleITK as sitk
 from . import preprocessing
 from .loading.convert import ImageLike, tonumpy, tositk, totensor
 from .utils.torch_utils import CUDA_IF_AVAILABLE
+from .utils.sitk_utils import sitk_apply_numpy
 
 if TYPE_CHECKING:
     import torch
@@ -125,6 +126,26 @@ class Study(UserDict[str, sitk.Image | Any]):
 
         return Study(**scans, **seg, **self.get_info())
 
+    def apply_numpy(self, fn:Callable[[np.ndarray], np.ndarray] | None, seg_fn: Callable[[np.ndarray], np.ndarray] | None) -> "Study":
+        """Returns a new ``Study`` with ``fn`` applied to scans and ``seg_fn`` applied to segmentations.
+
+        Args:
+            fn: Function to apply to scan images. Must take and return ``sitk.Image``.
+                If None, identity function is used.
+            seg_fn: Function to apply to segmentation images. Must take and return ``sitk.Image``.
+                If None, identity function is used.
+        """
+        scans = self.get_scans()
+        seg = self.get_segmentations()
+
+        if fn is not None:
+            scans = {k: sitk_apply_numpy(v, fn) for k,v in scans.items()}
+
+        if seg_fn is not None:
+            seg = {k: sitk_apply_numpy(v, seg_fn) for k,v in seg.items()}
+
+        return Study(**scans, **seg, **self.get_info())
+
     def cast(self, dtype) -> "Study":
         """Returns a new study with all scans cast to the specified SimpleITK dtype.
 
@@ -175,6 +196,15 @@ class Study(UserDict[str, sitk.Image | Any]):
         """
         d = preprocessing.cropping.crop_bg_D(self.get_images(), key)
         return Study(**d, **self.get_info())
+
+    def center_crop_or_pad(self, size: Sequence[int]):
+        shapes = {k: tuple(img.GetSize()) for k, img in self.get_images().items()}
+        if len(set(shapes.values())) > 1:
+            raise RuntimeError(f"center_crop_or_pad can only be applied to a Study where all images have the same shape. "
+                               f"Current shapes: {shapes}")
+
+        fn = partial(preprocessing.center_crop_or_pad, size=size)
+        return self.apply(fn=fn, seg_fn=fn)
 
     def skullstrip_hd_bet(
         self,

@@ -73,7 +73,7 @@ def run_CTseg(
         f"spm_CTseg('/data/{pth_ct.name}', '{dir_out}', true, true, true, true, 1.0)",
     ]
 
-    # run dcm2niix
+    # run
     subprocess.run(command, check=True)
 
 # this creates

@@ -30,23 +30,6 @@ class LazyLoader:
         return getattr (self._mod, attr)
 
 
-# this allows transforms to support any kind of container
-# class _Packer[T: Sequence | Mapping]:
-#     def __init__(self, type: type[T], keys: list | None = None):
-#         self.type: Any = type
-#         self.keys = keys
-
-#     def pack(self, unpacked: Sequence) -> T:
-#         if self.keys is not None: return self.type(dict(zip(self.keys, unpacked)))
-#         return self.type(unpacked)
-
-# def unpack_struct[T: Sequence | Mapping](struct: T) -> tuple[Any, _Packer[T]]:
-#     if isinstance(struct, Sequence):
-#         return list(struct), _Packer(type(struct))
-#     if isinstance(struct, Mapping):
-#         return list(struct.values()), _Packer(type(struct), list(struct.values()))
-#     raise TypeError(f"Transformation functions accept lists and dictionaries, but received {type(struct)}")
-
 T = TypeVar("T")
 def reduce_dim(x:Iterable[Iterable[T]]) -> list[T]:
     """Reduces one level of nesting. Takes an iterable of iterables of X, and returns an iterable of X."""
