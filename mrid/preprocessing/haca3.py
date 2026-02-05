@@ -206,7 +206,7 @@ def harmonize(
         for i, img in enumerate(inputs):
             if tuple(img.GetSize()) != (192, 224, 192):
                 raise RuntimeError(
-                    "all inputs must be in MNI152 space and center-padded to size of ``[192, 224, 192]``. "
+                    "all inputs to HACA3 must be in MNI152 space and center-padded to size of ``[192, 224, 192]``. "
                     f"Got image {i} of size {img.GetSize()}")
 
             sitk.WriteImage(img, os.path.join(tmpdir, f"input_{i}.nii.gz"))
@@ -215,7 +215,7 @@ def harmonize(
             target_path = os.path.join(tmpdir, "target_image.nii.gz")
             if tuple(target_image.GetSize()) != (192, 224, 192):
                 raise RuntimeError(
-                    "all inputs must be in MNI152 space and center-padded to size of ``[192, 224, 192]``. "
+                    "all inputs to HACA3 must be in MNI152 space and center-padded to size of ``[192, 224, 192]``. "
                     f"Got target_image of size {target_image.GetSize()}")
 
             sitk.WriteImage(target_image, target_path)
