@@ -248,7 +248,7 @@ class Study(UserDict[str, sitk.Image | Any]):
                 Positive values expand brain mask by this many pixels, meaning inner parts of the skull will be included;
                 Negative values dilate brain mask by this many pixels, meaning outer parts of the brain will be excluded.
             include_mask (bool, optional):
-                if True, adds ``"seg_hd_bet"`` with brain mask predicted by HD-BET to returned dictionary.
+                if True, adds ``"seg_hd_bet"`` with brain mask predicted by HD-BET to returned study.
                 This adds brain mask BEFORE expanding/dilating if ``expand`` argument is specified.
             keep_original (bool, Optional):
                 if True, skull-stripped images are added to the returned study with ``"_hd_bet"`` postfix,
@@ -542,7 +542,7 @@ class Study(UserDict[str, sitk.Image | Any]):
                 if specified, processed mask is added to returned study with specified postfix rather than
                 replacing current ``key``.
         """
-        arr = self.numpy(key)
+        arr = self.to_numpy(key)
 
         if independent_channels:
             from monai.transforms import remove_small_objects
@@ -587,14 +587,14 @@ class Study(UserDict[str, sitk.Image | Any]):
         from monai.transforms import KeepLargestConnectedComponent
         tfm = KeepLargestConnectedComponent(applied_labels=applied_labels, is_onehot=False, independent=independent,
                                             connectivity=connectivity, num_components=num_components)
-        arr = tfm(self.numpy(key))
+        arr = tfm(self.to_numpy(key))
         return self.add(f'{key}{postfix}', arr, reference_key=key)
 
-    def numpy(self, key: str):
+    def to_numpy(self, key: str):
         """returns ``study[key]`` converted to a numpy array."""
         return tonumpy(self[key])
 
-    def tensor(self, key: str):
+    def to_tensor(self, key: str):
         """returns ``study[key]`` converted to a tensor."""
         return totensor(self[key])
 
@@ -645,18 +645,18 @@ class Study(UserDict[str, sitk.Image | Any]):
         stacked = torch.stack([torch.from_numpy(sitk.GetArrayFromImage(v)) for _,v in items])
         return stacked.to(device=device, dtype=dtype, memory_format=torch.contiguous_format)
 
-    def numpy_dict(self) -> dict[str, np.ndarray | Any]:
+    def to_numpy_dict(self) -> dict[str, np.ndarray | Any]:
         """Returns a dictionary with all images converted to numpy arrays, info is included as is."""
         return {k: (sitk.GetArrayFromImage(v) if isinstance(v, sitk.Image) else v) for k, v in self.items()}
 
-    def tensor_dict(self) -> "dict[str, torch.Tensor | Any]":
+    def to_tensor_dict(self) -> "dict[str, torch.Tensor | Any]":
         """Returns a dictionary with all images converted to tensors, info is included as is."""
         import torch
-        return {k: (torch.from_numpy(v) if isinstance(v, np.ndarray) else v) for k,v in self.numpy_dict()}
+        return {k: (torch.from_numpy(v) if isinstance(v, np.ndarray) else v) for k,v in self.to_numpy_dict()}
 
     def plot(self):
         from .utils.plotting import plot_study
-        return plot_study(self.get_images().numpy_dict())
+        return plot_study(self.get_images().to_numpy_dict())
 
     def save(
         self,

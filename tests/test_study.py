@@ -90,7 +90,7 @@ def test_numpy_method():
     data = np.random.rand(10, 20, 30).astype(np.float32)
     study = Study(t1=data)
 
-    numpy_array = study.numpy('t1')
+    numpy_array = study.to_numpy('t1')
     assert isinstance(numpy_array, np.ndarray)
     assert numpy_array.shape == (10, 20, 30)
 

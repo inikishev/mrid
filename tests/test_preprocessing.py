@@ -10,8 +10,8 @@ def test_resize():
     study = Study(t1=np.random.rand(10, 20, 30).astype(np.float32))
     resized = study.resize([5, 10, 15])
     assert 't1' in resized
-    assert study.numpy("t1").shape == (10, 20, 30)
-    assert resized.numpy("t1").shape == (5, 10, 15)
+    assert study.to_numpy("t1").shape == (10, 20, 30)
+    assert resized.to_numpy("t1").shape == (5, 10, 15)
 
 
 def test_downsample():
@@ -19,8 +19,8 @@ def test_downsample():
     study = Study(t1=np.random.rand(10, 20, 30).astype(np.float32))
     downsampled = study.downsample(factor=2.0)  # 2x downsampling
     assert 't1' in downsampled
-    assert study.numpy("t1").shape == (10, 20, 30)
-    assert downsampled.numpy("t1").shape == (5, 10, 15)
+    assert study.to_numpy("t1").shape == (10, 20, 30)
+    assert downsampled.to_numpy("t1").shape == (5, 10, 15)
 
 
 def test_bias_field_correction():
@@ -40,4 +40,4 @@ def test_crop_bg():
     assert 't1' in cropped
     assert 't2' in cropped
 
-    assert study.numpy("t1").shape == study.numpy("t2").shape
+    assert study.to_numpy("t1").shape == study.to_numpy("t2").shape
