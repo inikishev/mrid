@@ -4,7 +4,7 @@ import numpy as np
 
 from ..loading import ImageLike, tonumpy
 
-def plot_study(data: "ImageLike | Mapping[str, ImageLike]", show:bool=True):
+def plot_study(data: "ImageLike | Mapping[str, ImageLike]"):
     import matplotlib.gridspec as gridspec
     import matplotlib.pyplot as plt
 
