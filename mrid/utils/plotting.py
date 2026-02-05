@@ -4,9 +4,12 @@ import numpy as np
 
 from ..loading import ImageLike, tonumpy
 
-def plot_study(data: Mapping[str, ImageLike], show:bool=True):
+def plot_study(data: "ImageLike | Mapping[str, ImageLike]", show:bool=True):
     import matplotlib.gridspec as gridspec
     import matplotlib.pyplot as plt
+
+    if not isinstance(data, Mapping):
+        data = {"image": data}
 
     data = {k: tonumpy(v) for k,v in data.items()}
     n_vals = len(data)
