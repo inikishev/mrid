@@ -35,6 +35,7 @@ def crop_bg_D(images: Mapping[str, ImageLike], key: str) -> dict[str, sitk.Image
     return ret
 
 def center_crop_or_pad(image, size: Sequence[int]) -> "sitk.Image":#[192, 224, 192]
+    """Crops or pads image from the center to ``size``."""
     image = tositk(image)
     current_size = list(image.GetSize())
 
@@ -65,8 +66,7 @@ def center_crop_or_pad(image, size: Sequence[int]) -> "sitk.Image":#[192, 224, 1
     image = sitk.Crop(image, low_crop, high_crop)
 
     # Verify size
-    if list(image.GetSize()) == size:
+    if tuple(image.GetSize()) == tuple(size):
         return image
 
-    raise RuntimeError(
-        f"Error: Final size is {image.GetSize()}, instead of {size} (basically crop_or_pad failed for some reason)")
+    raise RuntimeError(f"Final size is {image.GetSize()} instead of {size}, crop_or_pad failed for some reason.")

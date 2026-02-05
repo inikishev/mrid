@@ -1,9 +1,10 @@
 from collections.abc import Mapping
 
 import numpy as np
+
 from ..loading import ImageLike, tonumpy
 
-def plot_study(data: Mapping[str, ImageLike]):
+def plot_study(data: Mapping[str, ImageLike], show:bool=True):
     import matplotlib.gridspec as gridspec
     import matplotlib.pyplot as plt
 
@@ -78,29 +79,28 @@ def plot_study(data: Mapping[str, ImageLike]):
         fig.text(box.x0 + box.width/2, box.y1 + 0.04, modality_name,
                  ha='center', va='bottom', fontsize=14, fontweight='bold')
 
-    # plt.show()
     return fig
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    def dummy_data(shape, type='sphere'):
-        x, y, z = np.indices(shape)
-        cx, cy, cz = shape[0]//2, shape[1]//2, shape[2]//2
-        mask = np.zeros(shape)
-        if type == 'sphere':
-            r = min(shape)//3
-            mask[(x-cx)**2 + (y-cy)**2 + (z-cz)**2 < r**2] = 1
-        elif type == 'cube':
-            r = min(shape)//4
-            mask[cx-r:cx+r, cy-r:cy+r, cz-r:cz+r] = 1
-        elif type == 'noise':
-            mask = np.random.rand(*shape)
+#     def dummy_data(shape, type='sphere'):
+#         x, y, z = np.indices(shape)
+#         cx, cy, cz = shape[0]//2, shape[1]//2, shape[2]//2
+#         mask = np.zeros(shape)
+#         if type == 'sphere':
+#             r = min(shape)//3
+#             mask[(x-cx)**2 + (y-cy)**2 + (z-cz)**2 < r**2] = 1
+#         elif type == 'cube':
+#             r = min(shape)//4
+#             mask[cx-r:cx+r, cy-r:cy+r, cz-r:cz+r] = 1
+#         elif type == 'noise':
+#             mask = np.random.rand(*shape)
 
-        return mask
+#         return mask
 
-    plot_study({
-        "Sphere": dummy_data((60, 60, 60), 'sphere'),
-        "Cube": dummy_data((60, 60, 60), 'cube'),
-        "Noise": dummy_data((60, 60, 60), 'noise'),
-        "Another sphere": dummy_data((60, 60, 60), 'sphere'),
-    })
+#     plot_study({
+#         "Sphere": dummy_data((60, 60, 60), 'sphere'),
+#         "Cube": dummy_data((60, 60, 60), 'cube'),
+#         "Noise": dummy_data((60, 60, 60), 'noise'),
+#         "Another sphere": dummy_data((60, 60, 60), 'sphere'),
+#     })

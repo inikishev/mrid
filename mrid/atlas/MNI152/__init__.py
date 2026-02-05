@@ -60,7 +60,7 @@ def get_mni152(
     ],
     skullstripped: bool = False,
 ):
-    """Returns path to .nii.gz file of specified MNI-152 template.
+    """Returns path to .nii.gz file of specified MNI-152 template. All templates are with skull.
 
     The following templates are available:
     - ``"2006 T1w symmetric"``

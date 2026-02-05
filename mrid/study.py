@@ -198,6 +198,11 @@ class Study(UserDict[str, sitk.Image | Any]):
         return Study(**d, **self.get_info())
 
     def center_crop_or_pad(self, size: Sequence[int]):
+        """Returns a new study with all images cropped or padded from the center to ``size``.
+
+        Args:
+            size: target image shape in pixels.
+        """
         shapes = {k: tuple(img.GetSize()) for k, img in self.get_images().items()}
         if len(set(shapes.values())) > 1:
             raise RuntimeError(f"center_crop_or_pad can only be applied to a Study where all images have the same shape. "
@@ -308,6 +313,85 @@ class Study(UserDict[str, sitk.Image | Any]):
             verbose=verbose,
         )
         return Study(**d, **self.get_segmentations(), **self.get_info())
+
+    def harmonize_haca3(
+        self,
+        conda_path: str | os.PathLike,
+        env_name: str,
+        harmonization_model: str | os.PathLike,
+        fusion_model: str | os.PathLike,
+        keys: "str | Sequence[str]",
+        target_image: "ImageLike | None" = None,
+        target_theta: tuple[float,float] | None = None,
+        norm_val: float | None = None,
+        intermediate_out_dir: str | os.PathLike | None = None,
+        gpu_id: int | None = None,
+        num_batches: int | None = None,
+        new_key="harmonized_haca3",
+    ):
+        """Returns a new study, where a harmonized image is added under key ``new_key``
+        (by default ``"harmonized_haca3"``).
+
+        Important: Some preprocessing steps are needed before running HACA3:
+
+        - Inhomogeneity correction
+        - Super-resolution for 2D acquired scans. This step is optional, but recommended for optimal performance. See [SMORE](https://github.com/volcanofly/SMORE-Super-resolution-for-3D-medical-images-MRI) for more details.
+        - Registration to MNI space (1mm isotropic resolution). HACA3 assumes a spatial dimension of 192x224x192.
+
+        For example, you can do the following:
+        ```python
+        study = study.register_SE("t1", mrid.atlas.get_mni152("2006 T1w symmetric"))
+        study = study.n4_bias_field_correction("t1")
+        study = study.center_crop_or_pad([192, 224, 192])
+        study = study.harmonize_haca3(...)
+        ```
+
+        Args:
+            conda_path: path to ``minconda3`` directory.
+            env_name: name of the conda env where HACA3 is installed.
+            harmonization_model: pretrained HACA3 weights. Pretrained model weights on IXI, OASIS and HCP
+                data can be downloaded [here](https://iacl.ece.jhu.edu/~lianrui/haca3/harmonization_public.pt).
+            fusion_model: pretrained fusion model weights. HACA3 uses a 3D convolutional network to
+                combine multi-orientation 2D slices into a single 3D volume. Pretrained fusion model
+                can be downloaded [here](https://iacl.ece.jhu.edu/~lianrui/haca3/fusion.pt).
+            keys: key of the input source image. Multiple key may be provided if there are
+                multiple source images (different modalities). Note that modalities must be in
+                MNI space (1mm isotropic resolution). HACA3 assumes a spatial dimension of 192x224x192.
+            target_image: target image. HACA3 will match the contrast of
+                source images to this target image. One of ``target_image`` or ``target_theta`` must be set.
+            target_theta: In HACA3, ``theta`` is a two-dimensional representation of image contrast.
+                Target image contrast can be directly specified by providing a ``theta`` value, e.g.,
+                ``target_theta = (0.5, 0.5)``.  One of ``target_image`` or ``target_theta`` must be set.
+                Some example values: ``(10.0, 20.0)`` or ``(0.0, 30.0)`` represent T1w;
+                ``(-18.0, -16.0)`` represents T2W; ``(0.0, 0.0)`` represents FLAIR.
+            norm_val: normalization value. Defaults to None.
+            intermediate_out_dir: directory to save intermediate results. Defaults to None.
+            gpu_id: integer number specifies which GPU to run HACA3. Defaults to None.
+            num_batches: During inference, HACA3 takes entire 3D MRI volumes as input.
+                This may cause a considerable amount GPU memory. For reduced GPU memory consumption,
+                source images maybe divided into smaller batches. However, this may slightly
+                increase the inference time. Defaults to None.
+            new_key: name of the harmonized image in retuned study. Defaults to "harmonized_haca3".
+        """
+        if isinstance(keys, str): keys = (keys, )
+        images = [(k, self[k]) for k in keys]
+
+        harmonized = preprocessing.haca3.harmonize(
+            conda_path=conda_path,
+            env_name=env_name,
+            harmonization_model=harmonization_model,
+            fusion_model=fusion_model,
+            inputs=[img for k,img in images],
+            target_image=target_image,
+            target_theta=target_theta,
+            norm_val=norm_val,
+            intermediate_out_dir=intermediate_out_dir,
+            gpu_id=gpu_id,
+            num_batches=num_batches,
+        )
+
+        return self.add(new_key, harmonized)
+
 
     def resize(self, size: Sequence[int], interpolator=sitk.sitkLinear):
         """Returns a new study with all images resized to to ``size``.
