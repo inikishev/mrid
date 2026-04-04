@@ -47,10 +47,12 @@ def run_dcm2niix(
 
         # create temporary folders
         tmp_input_dir = os.path.join(tmpdir, "mrid_dcm2niix_input")
+        if os.path.exists(tmp_input_dir): shutil.rmtree(tmp_input_dir)
+        shutil.copytree(inpath, tmp_input_dir)
+
         tmp_output_dir = os.path.join(tmpdir, "mrid_dcm2niix_output")
         if os.path.exists(tmp_output_dir): shutil.rmtree(tmp_output_dir)
         os.mkdir(tmp_output_dir)
-        shutil.copytree(inpath, tmp_input_dir)
 
         # create output dir if it doesn't exist
         if outfolder != '':
@@ -72,7 +74,7 @@ def run_dcm2niix(
         out_files = [i for i in os.listdir(tmp_output_dir) if i.lower().strip().endswith('.nii.gz')]
 
         # move them to output folder
-        shutil.copytree(tmp_output_dir, outfolder)
+        shutil.copytree(tmp_output_dir, outfolder, dirs_exist_ok=True)
 
         if len(out_files) > 1:
             warnings.warn(f"More than one NIfTI file was created in {outfolder}, path to the first one will be returned. Something may be wrong.")
