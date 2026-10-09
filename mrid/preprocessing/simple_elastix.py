@@ -1,11 +1,11 @@
+import os
 from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
-import os
 import numpy as np
 import SimpleITK as sitk
 
-from ..loading.convert import tositk, ImageLike
+from ..loading.convert import ImageLike, tositk
 
 
 def _default_pmap():

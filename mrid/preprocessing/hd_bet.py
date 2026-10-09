@@ -8,8 +8,8 @@ import SimpleITK as sitk
 
 from ..loading.convert import ImageLike, tositk
 from ..utils.torch_utils import CUDA_IF_AVAILABLE
+from .mask import apply_mask, expand_binary_mask
 from .simple_elastix import register, register_D
-from .mask import expand_binary_mask, apply_mask
 
 # hd_bet -h
 
