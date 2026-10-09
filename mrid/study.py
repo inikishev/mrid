@@ -13,8 +13,8 @@ import SimpleITK as sitk
 
 from . import preprocessing
 from .loading.convert import ImageLike, tonumpy, tositk, totensor
-from .utils.torch_utils import CUDA_IF_AVAILABLE
 from .utils.sitk_utils import sitk_apply_numpy
+from .utils.torch_utils import CUDA_IF_AVAILABLE
 
 if TYPE_CHECKING:
     import torch
