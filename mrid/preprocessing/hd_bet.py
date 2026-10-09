@@ -130,7 +130,7 @@ def predict_brain_mask(
     else:
         brain_mask = brain_mask_mni
 
-    return brain_mask
+    return sitk.Cast(brain_mask, sitk.sitkUInt8)
 
 def skullstrip(
     input: ImageLike,
